@@ -67,6 +67,16 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		_;
 	}
 
+	modifier validTimeSlice(uint256 _timeSlice) {
+		require(_timeSlice <= getTimeSlice(), "Invalid time slice");
+		_;
+	}
+
+	modifier validIndex(uint256 _timeSlice, uint256 _index) {
+		require(_index <= TOTAL_CARD_SLOTS - getLevel() && getLevel() > 0 && getLevel() <= 9, "Invalid index");
+		_;
+	}
+
 	modifier nextRandomNumber() {
 		lastRandomTimeSlice = getTimeSlice() + 1;
 		randomNumbers[lastRandomTimeSlice] = uint256(
@@ -91,6 +101,16 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		allowedAddresses[_address] = _setting;
 	}
 
+	function checkAllowedAddress(
+		address _address
+	)
+		external
+		view
+		returns (bool)
+	{
+		return allowedAddresses[_address];
+	}
+
 
 	/**
 	 * Playing the Game
@@ -110,7 +130,7 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 
 		// Determine whether this card is permissible to be claimed
 		// Look up the token ID based on the index & game state
-		require(getCardDraw(_index) > NUM_SOLO, "Can only claim solo cards");
+		require(getCardDraw(_index) <= NUM_SOLO, "Can only claim solo cards");
 
 		// If allowed, mint
 		_mint(_msgSender(), constructCard(timeSlice, _index), 1, "");
@@ -129,7 +149,7 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		returns (uint256)
 	{
 		// Need to have randomness for each time slice, but also need to review previous random numbers
-		return randomNumbers[lastRandomTimeSlice];
+		return randomNumbers[_timeSlice] == 0 ? randomNumbers[lastRandomTimeSlice] : randomNumbers[_timeSlice];
 
 		//if (_timeSlice)
 //
@@ -193,8 +213,8 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		view
 		returns (uint256)
 	{
-		return getCardDraw(
-			getTimeSlice() - 1,
+		return _getCardDraw(
+			getTimeSlice(),
 			_index
 		);
 	}
@@ -233,17 +253,16 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		return audioSampleSize;
 	}
 
-	function getCardDraw(
+	function _getCardDraw(
 		uint256 _timeSlice,
 		uint256 _index
 	)
 		public
 		view
+		validTimeSlice(_timeSlice)
+		validIndex(_timeSlice, _index)
 		returns (uint256)
 	{
-		require(_timeSlice < getTimeSlice(), "Invalid time slice");
-		require(_index < TOTAL_CARD_SLOTS - getLevel(), "Invalid index");
-
 		// Get the current random number & deck size right now
 		uint256 randomNumber = getRandomNumber(_timeSlice);
 		uint256 deckSize = getDeckSize();
@@ -256,7 +275,7 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 			cardIndex = (randomNumber >> (iter * 6)) % deckSize;
 
 			// If already selected, pick the next card, cyclical
-			while (drawnCards & (2 ** cardIndex) == 1) {
+			while ((drawnCards >> cardIndex) % 2 == 1) {
 				cardIndex = (cardIndex + 1) % deckSize;
 			}
 
@@ -265,7 +284,7 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		}
 
 		// All card draw indexes must be +1 since token ID must start at 1
-		return cardIndex + 1;
+		return cardIndex;
 	}
 
 	function getCardBackground(
@@ -274,11 +293,10 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 	)
 		public
 		view
+		validTimeSlice(_timeSlice)
+		validIndex(_timeSlice, _index)
 		returns (uint256)
 	{
-		require(_timeSlice < getTimeSlice(), "Invalid time slice");
-		require(_index < TOTAL_CARD_SLOTS - getLevel(), "Invalid index");
-
 		// Get the current random number & deck size right now
 		// Skip the number of levels * 6 -> 2^6 = 64; Max is 108 bits shifted with 9 levels & indices
 		uint256 randomNumber = getRandomNumber(_timeSlice) >> ((NUM_LEVELS + _index) * 6);
@@ -290,10 +308,9 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 	)
 		public
 		view
+		validTimeSlice(_timeSlice)
 		returns (uint256)
 	{
-		require(_timeSlice < getTimeSlice(), "Invalid time slice");
-
 		// Get the current random number & deck size right now
 		// Skip the number of levels * 6 -> 2^6 = 64; Max is 108 bits shifted with 9 levels & indices, +1 for audio (114 bits shifted)
 		uint256 randomNumber = getRandomNumber(_timeSlice) >> ((NUM_LEVELS + TOTAL_CARD_SLOTS + 1) * 6);
@@ -308,10 +325,7 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		view
 		returns (uint256)
 	{
-		require(_timeSlice < getTimeSlice(), "Invalid time slice");
-		require(_index < TOTAL_CARD_SLOTS - getLevel(), "Invalid index");
-
-		uint256 card = getCardDraw(_timeSlice, _index);
+		uint256 card = _getCardDraw(_timeSlice, _index);
 		uint256 background = getCardBackground(_timeSlice, _index);
 		uint256 audio = getLevelAudio(_timeSlice);
 

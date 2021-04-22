@@ -11,14 +11,7 @@ require('dotenv').config();
 
 module.exports = {
   solidity: '0.8.0',
-  defaultNetwork: 'localhost',
   networks: {
-    hardhat: {
-      forking: {
-        url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
-        blockNumber: 12285925,
-      },
-    },
     mainnet: {
       url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
       accounts: [`0x${process.env.MAINNET_PRIVATE_KEY}`]
