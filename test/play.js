@@ -21,4 +21,28 @@ describe('F473', function () {
     expect(response).to.equal("https://localhost/{uri}.json");
   });
 
+  it('Default test: Should start at level 1, phase 1', async function () {
+    let response = await f473Contract.getLevel();
+    expect(response).to.equal(1);
+
+    response = await f473Contract.getPhase();
+    expect(response).to.equal(1);
+  });
+
+  it('Should iterate through all levels and phases as expected over a > 2 hour period', async function () {
+    for (let iter = 0; iter < 14; iter++) {
+      let level = await f473Contract.getLevel();
+      expect(level).to.equal((iter + 1) % 12 > 9 ? 0 : (iter + 1) % 12);
+
+      let phase = await f473Contract.getPhase();
+      expect(phase).to.equal((iter + 1) % 12 > 9 ? 0 : (Math.floor(iter / 3) + 1) % 4);
+
+      //console.log("level:", level, "- phase:", phase);
+
+      ethers.provider.send("evm_increaseTime", [60 * 10]); // Increase by 10 minutes
+      ethers.provider.send("evm_mine");
+    }
+    
+  });
+
 });
