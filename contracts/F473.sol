@@ -10,17 +10,22 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 {
 	// NFTs Config
-	uint256 constant NUM_SOLO         = 45;
-	uint256 constant NUM_PAIR         = 21;
-	uint256 constant NUM_COUPLE       = 6;
+	uint256 constant NUM_SOLO_CHAR    = 45;
+	uint256 constant NUM_PAIR_CHAR    = 21;
+	uint256 constant NUM_COUPLE_CHAR  = 6;
+	uint256 constant NUM_BACKGROUNDS  = 9;
 	uint256 constant NUM_SOLO_AUDIO   = 3;
 	uint256 constant NUM_PAIR_AUDIO   = 3;
 	uint256 constant NUM_COUPLE_AUDIO = 3;
-	uint256 constant NUM_BACKGROUNDS  = 9;
+	uint256 constant NUM_FINAL_AUDIO  = 1;
 
 	// Bitmasks for NFT IDs
-	uint256 constant AUDIO_BITSHIFT      = 12;
+	uint256 constant CHARACTER_BITMASK   = 0x00ff;
+	uint256 constant BACKGROUND_BITMASK  = 0x0f00;
+	uint256 constant AUDIO_BITMASK       = 0xf000;
+	uint256 constant CHARACTER_BITSHIFT  = 0;
 	uint256 constant BACKGROUND_BITSHIFT = 8;
+	uint256 constant AUDIO_BITSHIFT      = 12;
 
 	// Game Config
 	uint256 constant NUM_LEVELS = 9;
@@ -130,7 +135,7 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 
 		// Determine whether this card is permissible to be claimed
 		// Look up the token ID based on the index & game state
-		require(getCardDraw(_index) <= NUM_SOLO, "Can only claim solo cards");
+		require(getCardCharacter(timeSlice, _index) <= NUM_SOLO_CHAR, "Can only claim solo cards");
 
 		// If allowed, mint
 		_mint(_msgSender(), constructCard(timeSlice, _index), 1, "");
@@ -148,11 +153,16 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		view
 		returns (uint256)
 	{
-		// Need to have randomness for each time slice, but also need to review previous random numbers
-		return randomNumbers[_timeSlice] == 0 ? randomNumbers[lastRandomTimeSlice] : randomNumbers[_timeSlice];
+		if (_timeSlice > lastRandomTimeSlice) {
+			return randomNumbers[lastRandomTimeSlice];
+		}
 
-		//if (_timeSlice)
-//
+		while (randomNumbers[_timeSlice] == 0) {
+			_timeSlice--;
+		}
+
+		return randomNumbers[_timeSlice];
+
 		//return uint256(
 		//	keccak256(
 		//		abi.encodePacked(
@@ -206,16 +216,39 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		return (level - 1) / LEVELS_PER_PHASE + 1;
 	}
 
-	function getCardDraw(
+	function getCurrentCardCharacter(
 		uint256 _index
 	)
 		public
 		view
 		returns (uint256)
 	{
-		return _getCardDraw(
+		return getCardCharacter(
 			getTimeSlice(),
 			_index
+		);
+	}
+
+	function getCurrentCardBackground(
+		uint256 _index
+	)
+		public
+		view
+		returns (uint256)
+	{
+		return getCardBackground(
+			getTimeSlice(),
+			_index
+		);
+	}
+
+	function getCurrentCardAudio()
+		public
+		view
+		returns (uint256)
+	{
+		return getLevelAudio(
+			getTimeSlice()
 		);
 	}
 
@@ -225,12 +258,12 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		returns (uint256)
 	{
 		uint256 phase = getPhase();
-		uint256 deckSize = NUM_SOLO;
+		uint256 deckSize = NUM_SOLO_CHAR;
 		if (phase > 1) {
-			deckSize += NUM_PAIR;
+			deckSize += NUM_PAIR_CHAR;
 		}
 		if (phase > 2) {
-			deckSize += NUM_COUPLE;
+			deckSize += NUM_COUPLE_CHAR;
 		}
 		return deckSize;
 	}
@@ -243,17 +276,21 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		returns (uint256)
 	{
 		uint256 phase = getPhase();
-		uint256 audioSampleSize = NUM_SOLO_AUDIO;
-		if (phase > 1) {
-			audioSampleSize += NUM_PAIR_AUDIO;
+
+		if (phase == 1) {
+			return NUM_SOLO_AUDIO;
+		} else if (phase == 2) {
+			return NUM_PAIR_AUDIO;
+		} else if (phase == 3) {
+			return NUM_COUPLE_AUDIO;
+		} else if (phase == 4) {
+			return NUM_FINAL_AUDIO;
 		}
-		if (phase > 2) {
-			audioSampleSize += NUM_COUPLE_AUDIO;
-		}
-		return audioSampleSize;
+
+		return 0;
 	}
 
-	function _getCardDraw(
+	function getCardCharacter(
 		uint256 _timeSlice,
 		uint256 _index
 	)
@@ -300,7 +337,7 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		// Get the current random number & deck size right now
 		// Skip the number of levels * 6 -> 2^6 = 64; Max is 108 bits shifted with 9 levels & indices
 		uint256 randomNumber = getRandomNumber(_timeSlice) >> ((NUM_LEVELS + _index) * 6);
-		return randomNumber % NUM_BACKGROUNDS;
+		return randomNumber % NUM_BACKGROUNDS + 1;
 	}
 
 	function getLevelAudio(
@@ -314,7 +351,18 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		// Get the current random number & deck size right now
 		// Skip the number of levels * 6 -> 2^6 = 64; Max is 108 bits shifted with 9 levels & indices, +1 for audio (114 bits shifted)
 		uint256 randomNumber = getRandomNumber(_timeSlice) >> ((NUM_LEVELS + TOTAL_CARD_SLOTS + 1) * 6);
-		return randomNumber % getAudioSampleSize(_timeSlice);
+		uint256 audioIndex = randomNumber % getAudioSampleSize(_timeSlice) + 1;
+
+		uint256 phase = getPhase();
+		if (phase == 1) {
+			return audioIndex;
+		} else if (phase == 2) {
+			return audioIndex + NUM_SOLO_AUDIO;
+		} else if (phase == 3) {
+			return audioIndex + NUM_SOLO_AUDIO + NUM_PAIR_AUDIO;
+		}
+
+		return audioIndex + NUM_SOLO_AUDIO + NUM_PAIR_AUDIO + NUM_COUPLE_AUDIO;
 	}
 
 	function constructCard(
@@ -325,11 +373,27 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		view
 		returns (uint256)
 	{
-		uint256 card = _getCardDraw(_timeSlice, _index);
+		uint256 character = getCardCharacter(_timeSlice, _index);
 		uint256 background = getCardBackground(_timeSlice, _index);
 		uint256 audio = getLevelAudio(_timeSlice);
 
-		return audio << AUDIO_BITSHIFT + background << BACKGROUND_BITSHIFT + card;
+		return (audio << AUDIO_BITSHIFT) + (background << BACKGROUND_BITSHIFT) + character;
+	}
+
+	function deconstructCard(
+		uint256 _cardId
+	)
+		public
+		pure
+		returns (
+			uint256 character,
+			uint256 background,
+			uint256 audio
+		)
+	{
+		character  = _cardId & CHARACTER_BITMASK;
+		background = (_cardId & BACKGROUND_BITMASK) >> BACKGROUND_BITSHIFT;
+		audio      = (_cardId & AUDIO_BITMASK) >> AUDIO_BITSHIFT;
 	}
 
 	/**
