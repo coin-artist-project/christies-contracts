@@ -43,6 +43,19 @@ describe('F473', function () {
     expect(response).to.equal(1);
   });
 
+  it('Should not allow a non-owner to set the URI', async function () {
+    await expectRevert(f473Contract.connect(acct1).setBaseUri("testbreak"), 'Ownable: caller is not the owner');
+    await expectRevert(f473Contract.connect(acct2).setBaseUri("testbreak"), 'Ownable: caller is not the owner');
+  });
+
+  it('Should allow owner to set the URI', async function () {
+    let newUri = "https://portal.neondistrict.io/f473.json";
+    await f473Contract.setBaseUri(newUri);
+
+    let response = await f473Contract.uri(0);
+    expect(response).to.equal(newUri);
+  });
+
   it('Should not allow a non-allowed address to perform critical actions', async function () {
     await expectRevert(f473Contract.connect(acct1).claimCard(0), 'Address is not permitted');
   });

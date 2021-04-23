@@ -96,6 +96,15 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		_;
 	}
 
+	function setBaseUri(
+		string calldata _uri
+	)
+		external
+		onlyOwner
+	{
+		_setURI(_uri);
+	}
+
 	function setInAllowlist(
 		address _address,
 		bool _setting
@@ -124,6 +133,7 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		uint256 _index
 	)
 		public
+		nonReentrant
 		onlyAllowedAddress
 		nextRandomNumber
 	{
