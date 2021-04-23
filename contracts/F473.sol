@@ -284,7 +284,7 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		}
 
 		// All card draw indexes must be +1 since token ID must start at 1
-		return cardIndex;
+		return cardIndex + 1;
 	}
 
 	function getCardBackground(

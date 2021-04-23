@@ -15,12 +15,16 @@ describe('F473', function () {
   let acct2;
   let accts;
 
+  const NUM_SOLO         = 45;
+  const NUM_PAIR         = 21;
+  const NUM_COUPLE       = 6;
+  const NUM_SOLO_AUDIO   = 3;
+  const NUM_PAIR_AUDIO   = 3;
+  const NUM_COUPLE_AUDIO = 3;
+  const NUM_BACKGROUNDS  = 9;
+
   before(async () => {
     [owner, acct1, acct2, ...accts] = await ethers.getSigners();
-
-    // Set the timestamp to a known number
-    // NOTE: We do this so that the blockhashes are exactly as expected
-    //ethers.provider.send("evm_setNextBlockTimestamp", [3155760000]);
 
     const F473 = await ethers.getContractFactory('F473');
     f473Contract = await F473.deploy();
@@ -96,7 +100,8 @@ describe('F473', function () {
     for (let iter = 0; iter < 9; iter++) {
       let timeSlice = await f473Contract.getTimeSlice();
       let card = await f473Contract.getCardDraw(iter);
-      expect(card).to.equal([0x1d,0x17,0x08,0x0b,0x0a,0x21,0x1b,0x2c,0x1e][iter]);
+      expect(card).to.be.gte(1);
+      expect(card).to.be.lte(NUM_SOLO);
     }
 
     // Make sure we can't draw more than the level permits (or the game permits)
@@ -104,25 +109,19 @@ describe('F473', function () {
   });
 
   it('Should draw correct number of cards for all following levels without RNG change', async function () {
-    // In this instance, the random number is not changing at all, so the cards
-    // keep drawing over and over again for the last valid random number
-    const unchangingCards = [
-      [0x1d,0x17,0x08,0x0b,0x0a,0x21,0x1b,0x2c,0x1e],
-      [0x1d,0x17,0x08,0x0b,0x0a,0x21,0x1b,0x2c],
-      [0x1d,0x17,0x08,0x0b,0x0a,0x21,0x1b],
-      [0x1a,0x29,0x26,0x1b,0x2b,0x12],
-      [0x1a,0x29,0x26,0x1b,0x2b],
-      [0x1a,0x29,0x26,0x1b],
-      [0x02,0x3b,0x08],
-      [0x02,0x3b],
-      [0x02]
-    ];
-
     for (let level = 1; level <= 12; level++) {
       for (let iter = 0; iter < 9; iter++) {
         if (iter <= (9 - level) && level <= 9) {
           let card = await f473Contract.getCardDraw(iter);
-          expect(card).to.equal(unchangingCards[level - 1][iter]);
+
+          // Test number
+          let COUNT = NUM_SOLO;
+          if (level > 3) COUNT += NUM_PAIR;
+          if (level > 6) COUNT += NUM_COUPLE;
+
+          expect(card).to.be.gte(1);
+          expect(card).to.be.lte(COUNT);
+
         } else {
           await expectRevert(f473Contract.getCardDraw(iter), 'Invalid index');
         }
@@ -135,35 +134,31 @@ describe('F473', function () {
   });
 
   it('Should draw correct number of cards for all following levels with RNG change & allow player to pick a card each time', async function () {
-    // In this instance, the random number is not changing at all, so the cards
-    // keep drawing over and over again for the last valid random number
-    const unchangingCards = [
-      [0x1d,0x17,0x08,0x0b,0x0a,0x21,0x1b,0x2c,0x1e],
-      [0x1d,0x17,0x08,0x0b,0x0a,0x21,0x1b,0x2c],
-      [0x1d,0x17,0x08,0x0b,0x0a,0x21,0x1b],
-      [0x1a,0x29,0x26,0x1b,0x2b,0x12],
-      [0x1a,0x29,0x26,0x1b,0x2b],
-      [0x1a,0x29,0x26,0x1b],
-      [0x02,0x3b,0x08],
-      [0x02,0x3b],
-      [0x02]
-    ];
-
     for (let level = 1; level <= 12; level++) {
+      let viableSelection = null;
       for (let iter = 0; iter < 9; iter++) {
-        console.log(level, iter);
         if (iter <= (9 - level) && level <= 9) {
           let card = await f473Contract.getCardDraw(iter);
-          console.log(level, iter, card);
-          //expect(card).to.equal(unchangingCards[level - 1][iter]);
+          if (card <= 45 && viableSelection === null) {
+            viableSelection = iter;
+          }
+
+          // Test number
+          let COUNT = NUM_SOLO;
+          if (level > 3) COUNT += NUM_PAIR;
+          if (level > 6) COUNT += NUM_COUPLE;
+
+          expect(card).to.be.gte(1);
+          expect(card).to.be.lte(COUNT);
+
         } else {
           await expectRevert(f473Contract.getCardDraw(iter), 'Invalid index');
         }
       }
 
       // Player action
-      if (level <= 9) {
-        await f473Contract.connect(acct1).claimCard(0);
+      if (level <= 9 && viableSelection !== null) {
+        await f473Contract.connect(acct1).claimCard(viableSelection);
       } else {
         await expectRevert(f473Contract.connect(acct1).claimCard(0), 'Invalid index');
       }
