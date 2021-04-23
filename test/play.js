@@ -121,6 +121,46 @@ describe('F473', function () {
     await expectRevert(f473Contract.getCurrentCardCharacter(10), 'Invalid index');
   });
 
+  it('Should allow player to claim a card during level 1', async function () {
+    // See what character card we're claiming
+    let character = await f473Contract.getCurrentCardCharacter(0);
+    let background = await f473Contract.getCurrentCardBackground(0);
+    let audio = await f473Contract.getCurrentCardAudio();
+
+    // Issue the claim card
+    let tx = await f473Contract.connect(acct1).claimCard(0);
+    let receipt = await tx.wait();
+
+    // Now review the event
+    let eventPresent = false;
+    for (const event of receipt.events) {
+      if (event.event === 'TransferSingle') {
+        // Deconstruct the returned card
+        let cardDeconstructed = await f473Contract.deconstructCard(event.args.id.toNumber());
+
+        // Make sure that the transfer event has everything expected of it - from, to, id, value
+        expect(event.args.from).to.equal('0x0000000000000000000000000000000000000000');
+        expect(event.args.to).to.equal(acct1.address);
+        expect(cardDeconstructed.character.toNumber()).to.equal(character.toNumber());
+        expect(event.args.value).to.equal(1);
+
+        // Compare the background and audio
+        expect(cardDeconstructed.background.toNumber()).to.equal(background.toNumber());
+        expect(cardDeconstructed.audio.toNumber()).to.equal(audio.toNumber());
+
+        // Make sure an event fired
+        eventPresent = true;
+      }
+    }
+
+    // Verify that the event fired
+    expect(eventPresent).to.equal(true);
+  });
+
+  it('Should not allow player to claim a second card during the same time slice', async function () {
+    await expectRevert(f473Contract.connect(acct1).claimCard(0), 'Already moved this time frame');
+  });
+
   it('Should draw correct number of cards for all following levels without RNG change', async function () {
     for (let level = 1; level <= 12; level++) {
       for (let iter = 0; iter < 9; iter++) {
@@ -223,6 +263,35 @@ describe('F473', function () {
       } else {
         await expectRevert(f473Contract.connect(acct1).claimCard(0), (level <= 9) ? 'Can only claim solo cards' : 'Invalid index');
       }
+
+      // Go to the next level
+      ethers.provider.send("evm_increaseTime", [60 * 10]); // Increase by 10 minutes
+      ethers.provider.send("evm_mine");
+    }
+  });
+
+  it('Should get all card characters at once', async function () {
+    for (let level = 1; level <= 12; level++) {
+      let cards = await f473Contract.getCurrentCardCharacters();
+
+      // Test number
+      let COUNT = NUM_SOLO;
+      if (level > 3) COUNT += NUM_PAIR;
+      if (level > 6) COUNT += NUM_COUPLE;
+
+      // Test all cards
+      for (let cardIdx in cards) {
+        let card = cards[cardIdx];
+        if (cardIdx > 9 - level) {
+          expect(card).to.be.equal(0);
+        } else {
+          expect(card).to.be.gte(1);
+          expect(card).to.be.lte(COUNT);
+        }
+      }
+
+      // Force a roll
+      await f473Contract.connect(acct1).roll();
 
       // Go to the next level
       ethers.provider.send("evm_increaseTime", [60 * 10]); // Increase by 10 minutes

@@ -96,6 +96,14 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		_;
 	}
 
+	modifier oneActionPerAddressPerTimeSlice() {
+		// Make sure that this address hasn't already moved this time slice
+		uint256 timeSlice = getTimeSlice();
+		require(addressLastMove[_msgSender()] < timeSlice, "Already moved this time frame");
+		addressLastMove[_msgSender()] = timeSlice;
+		_;
+	}
+
 	function setBaseUri(
 		string calldata _uri
 	)
@@ -129,19 +137,26 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 	/**
 	 * Playing the Game
 	 */
+	function roll()
+		public
+		nonReentrant
+		onlyAllowedAddress
+		oneActionPerAddressPerTimeSlice
+		nextRandomNumber
+	{
+		// Doesn't do anything else, forces a random roll change, but acts as a turn
+	}
+
 	function claimCard(
 		uint256 _index
 	)
 		public
 		nonReentrant
 		onlyAllowedAddress
+		oneActionPerAddressPerTimeSlice
 		nextRandomNumber
 	{
 		uint256 timeSlice = getTimeSlice();
-
-		// Make sure that this address hasn't already moved this time slice
-		require(addressLastMove[_msgSender()] < timeSlice, "Already moved this time frame");
-		addressLastMove[_msgSender()] = timeSlice;
 
 		// Determine whether this card is permissible to be claimed
 		// Look up the token ID based on the index & game state
@@ -310,16 +325,42 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		validIndex(_timeSlice, _index)
 		returns (uint256)
 	{
+		uint256[] memory characters = getCardCharacters(_timeSlice);
+		return characters[_index];
+	}
+
+	function getCurrentCardCharacters()
+		public
+		view
+		returns (uint256[] memory)
+	{
+		return getCardCharacters(getTimeSlice());
+	}
+
+	function getCardCharacters(
+		uint256 _timeSlice
+	)
+		public
+		view
+		validTimeSlice(_timeSlice)
+		returns (uint256[] memory)
+	{
+		// If the level is invalid, exit
+		if (getLevel() == 0) {
+			return new uint256[](9);
+		}
+
 		// Get the current random number & deck size right now
+		uint256 lastIndex = NUM_LEVELS - getLevel();
 		uint256 randomNumber = getRandomNumber(_timeSlice);
 		uint256 deckSize = getDeckSize();
 
 		// Draw unique cards from the batch
-		uint256 cardIndex;
+		uint256[] memory cardIndices = new uint256[](9);
 		uint256 drawnCards;
-		for (uint256 iter; iter <= _index; iter++) {
+		for (uint256 iter; iter <= lastIndex; iter++) {
 			// Get the index
-			cardIndex = (randomNumber >> (iter * 6)) % deckSize;
+			uint256 cardIndex = (randomNumber >> (iter * 6)) % deckSize;
 
 			// If already selected, pick the next card, cyclical
 			while ((drawnCards >> cardIndex) % 2 == 1) {
@@ -328,10 +369,13 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 
 			// Mark the drawn card to prevent from being drawn again
 			drawnCards += 2 ** cardIndex;
+
+			// Add to the list of cards drawn
+			// All card draw indexes must be +1 since token ID must start at 1
+			cardIndices[iter] = cardIndex + 1;
 		}
 
-		// All card draw indexes must be +1 since token ID must start at 1
-		return cardIndex + 1;
+		return cardIndices;
 	}
 
 	function getCardBackground(
