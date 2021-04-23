@@ -147,7 +147,7 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		// Doesn't do anything else, forces a random roll change, but acts as a turn
 	}
 
-	function claimCard(
+	function claimSoloCard(
 		uint256 _index
 	)
 		public
@@ -156,14 +156,43 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		oneActionPerAddressPerTimeSlice
 		nextRandomNumber
 	{
-		uint256 timeSlice = getTimeSlice();
-
 		// Determine whether this card is permissible to be claimed
 		// Look up the token ID based on the index & game state
-		require(getCardCharacter(timeSlice, _index) <= NUM_SOLO_CHAR, "Can only claim solo cards");
+		require(getCurrentCardCharacter(_index) <= NUM_SOLO_CHAR, "Can only claim solo cards");
 
 		// If allowed, mint
-		_mint(_msgSender(), constructCard(timeSlice, _index), 1, "");
+		_mint(_msgSender(), constructCard(_index), 1, "");
+	}
+
+	function tradeForPairCard(
+		uint256 _cardId1,
+		uint256 _cardId2,
+		uint256 _index
+	)
+		public
+		nonReentrant
+		onlyAllowedAddress
+		oneActionPerAddressPerTimeSlice
+		nextRandomNumber
+	{
+		// Determine whether this card is permissible to be claimed
+		// Look up the token ID based on the index & game state
+		uint256 selectedCharacter = getCurrentCardCharacter(_index);
+		require(selectedCharacter > NUM_SOLO_CHAR && selectedCharacter <= (NUM_SOLO_CHAR + NUM_PAIR_CHAR), "Can only claim pair cards");
+
+		// Check that the input cards are valid
+		(uint256 character1,,) = deconstructCard(_cardId1);
+		require(character1 <= NUM_SOLO_CHAR, "Can only trade in solo cards");
+
+		(uint256 character2,,) = deconstructCard(_cardId2);
+		require(character2 <= NUM_SOLO_CHAR, "Can only trade in solo cards");
+
+		// Trade in the cards
+		safeTransferFrom(_msgSender(), address(this), _cardId1, 1, "");
+		safeTransferFrom(_msgSender(), address(this), _cardId2, 1, "");
+
+		// If allowed, mint
+		_mint(_msgSender(), constructCard(_index), 1, "");
 	}
 
 
@@ -420,16 +449,17 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 	}
 
 	function constructCard(
-		uint256 _timeSlice,
 		uint256 _index
 	)
 		public
 		view
 		returns (uint256)
 	{
-		uint256 character = getCardCharacter(_timeSlice, _index);
-		uint256 background = getCardBackground(_timeSlice, _index);
-		uint256 audio = getLevelAudio(_timeSlice);
+		uint256 timeSlice = getTimeSlice();
+
+		uint256 character = getCardCharacter(timeSlice, _index);
+		uint256 background = getCardBackground(timeSlice, _index);
+		uint256 audio = getLevelAudio(timeSlice);
 
 		return (audio << AUDIO_BITSHIFT) + (background << BACKGROUND_BITSHIFT) + character;
 	}
@@ -458,5 +488,15 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		payable
 	{
 		revert("No value accepted");
+	}
+
+	// Allow sending ERC1155s to this contract
+	function onERC1155Received(
+		address, address, uint256, uint256, bytes calldata
+	)
+		external
+		returns (bytes4)
+	{
+		return 0xf23a6e61;
 	}
 }

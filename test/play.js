@@ -15,6 +15,8 @@ describe('F473', function () {
   let acct2;
   let accts;
 
+  let acct1cards = [];
+
   const NUM_SOLO         = 45;
   const NUM_PAIR         = 21;
   const NUM_COUPLE       = 6;
@@ -57,7 +59,7 @@ describe('F473', function () {
   });
 
   it('Should not allow a non-allowed address to perform critical actions', async function () {
-    await expectRevert(f473Contract.connect(acct1).claimCard(0), 'Address is not permitted');
+    await expectRevert(f473Contract.connect(acct1).claimSoloCard(0), 'Address is not permitted');
   });
 
   it('Should allow adding an address to the permitted list, removing, and then adding again', async function () {
@@ -128,7 +130,7 @@ describe('F473', function () {
     let audio = await f473Contract.getCurrentCardAudio();
 
     // Issue the claim card
-    let tx = await f473Contract.connect(acct1).claimCard(0);
+    let tx = await f473Contract.connect(acct1).claimSoloCard(0);
     let receipt = await tx.wait();
 
     // Now review the event
@@ -148,6 +150,9 @@ describe('F473', function () {
         expect(cardDeconstructed.background.toNumber()).to.equal(background.toNumber());
         expect(cardDeconstructed.audio.toNumber()).to.equal(audio.toNumber());
 
+        // Keep track of cards
+        acct1cards.push(event.args.id.toString());
+
         // Make sure an event fired
         eventPresent = true;
       }
@@ -158,7 +163,7 @@ describe('F473', function () {
   });
 
   it('Should not allow player to claim a second card during the same time slice', async function () {
-    await expectRevert(f473Contract.connect(acct1).claimCard(0), 'Already moved this time frame');
+    await expectRevert(f473Contract.connect(acct1).claimSoloCard(0), 'Already moved this time frame');
   });
 
   it('Should draw correct number of cards for all following levels without RNG change', async function () {
@@ -222,7 +227,7 @@ describe('F473', function () {
         let audio = await f473Contract.getCurrentCardAudio();
 
         // Issue the claim card
-        let tx = await f473Contract.connect(acct1).claimCard(viableSelection);
+        let tx = await f473Contract.connect(acct1).claimSoloCard(viableSelection);
         let receipt = await tx.wait();
 
         // Random number for *this* time slice should stay the same, random number for *next* time slice should change
@@ -253,6 +258,9 @@ describe('F473', function () {
             console.log("audio", cardDeconstructed.audio.toNumber(), audio.toNumber());
             */
 
+            // Keep track of cards
+            acct1cards.push(event.args.id.toString());
+
             // Make sure an event fired
             eventPresent = true;
           }
@@ -261,7 +269,7 @@ describe('F473', function () {
         // Verify that the event fired
         expect(eventPresent).to.equal(true);
       } else {
-        await expectRevert(f473Contract.connect(acct1).claimCard(0), (level <= 9) ? 'Can only claim solo cards' : 'Invalid index');
+        await expectRevert(f473Contract.connect(acct1).claimSoloCard(0), (level <= 9) ? 'Can only claim solo cards' : 'Invalid index');
       }
 
       // Go to the next level
@@ -297,6 +305,77 @@ describe('F473', function () {
       ethers.provider.send("evm_increaseTime", [60 * 10]); // Increase by 10 minutes
       ethers.provider.send("evm_mine");
     }
+  });
+
+  it('Should allow account to trade in two solos for a pair card', async function () {
+    // Go to the level before paired cards show up
+    ethers.provider.send("evm_increaseTime", [60 * 10 * 2]); // Increase to Level 3, we'll jump to level 4
+    ethers.provider.send("evm_mine");
+
+    let level = await f473Contract.getLevel();
+    expect(level).to.be.equal(3);
+
+    // Find a paired card
+    let pairedIndex, selectedCard;
+    do {
+      await f473Contract.connect(acct1).roll();
+      ethers.provider.send("evm_increaseTime", [60 * 10]);
+      ethers.provider.send("evm_mine");
+
+      // Check the cards
+      let characters = await f473Contract.getCurrentCardCharacters();
+
+      for (let characterIdx in characters) {
+        if (characters[characterIdx].toNumber() > NUM_SOLO && characters[characterIdx].toNumber() <= NUM_SOLO + NUM_PAIR) {
+          pairedIndex = characterIdx;
+          selectedCard = characters[characterIdx].toNumber();
+        }
+      }
+    } while (pairedIndex === undefined || pairedIndex === null);
+
+    // Determine which cards we're trading in
+    inputCards = [
+      acct1cards.pop(),
+      acct1cards.pop()
+    ];
+
+    // Issue the claim card
+    let tx = await f473Contract.connect(acct1).tradeForPairCard(inputCards[0], inputCards[1], pairedIndex);
+    let receipt = await tx.wait();
+
+    // Now review the events
+    let eventsPresent = 0;
+    for (const event of receipt.events) {
+      if (event.event === 'TransferSingle') {
+        if (event.args.from === '0x0000000000000000000000000000000000000000') {
+          // Deconstruct the returned card
+          let cardDeconstructed = await f473Contract.deconstructCard(event.args.id.toNumber());
+
+          // Make sure that the transfer event has everything expected of it - from, to, id, value
+          expect(event.args.from).to.equal('0x0000000000000000000000000000000000000000');
+          expect(event.args.to).to.equal(acct1.address);
+          expect(cardDeconstructed.character.toNumber()).to.equal(selectedCard);
+          expect(event.args.value).to.equal(1);
+
+          // Compare the background and audio
+          //expect(cardDeconstructed.background.toNumber()).to.equal(background.toNumber());
+          //expect(cardDeconstructed.audio.toNumber()).to.equal(audio.toNumber());
+
+        } else {
+          // Make sure that the transfer event has everything expected of it - from, to, id, value
+          expect(event.args.from).to.equal(acct1.address);
+          expect(event.args.to).to.equal(f473Contract.address);
+          expect(event.args.id.toString()).to.equal(inputCards.shift());
+          expect(event.args.value).to.equal(1);
+        }
+
+        // Make sure an event fired
+        eventsPresent++;
+      }
+    }
+
+    // Make sure all three events fired
+    expect(eventsPresent).to.equal(3);
   });
 
 });
