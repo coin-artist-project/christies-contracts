@@ -17,19 +17,27 @@ describe('F473', function () {
 
   let acct1cards = [];
 
-  const NUM_SOLO         = 45;
-  const NUM_PAIR         = 21;
-  const NUM_COUPLE       = 6;
-  const NUM_SOLO_AUDIO   = 3;
-  const NUM_PAIR_AUDIO   = 3;
-  const NUM_COUPLE_AUDIO = 3;
-  const NUM_BACKGROUNDS  = 9;
+  let NUM_SOLO;
+  let NUM_PAIR;
+  let NUM_COUPLE;
+  let NUM_SOLO_AUDIO;
+  let NUM_PAIR_AUDIO;
+  let NUM_COUPLE_AUDIO;
+  let NUM_BACKGROUNDS;
 
   before(async () => {
     [owner, acct1, acct2, ...accts] = await ethers.getSigners();
 
     const F473 = await ethers.getContractFactory('F473');
     f473Contract = await F473.deploy();
+
+    NUM_SOLO         = await f473Contract.NUM_SOLO_CHAR();
+    NUM_PAIR         = await f473Contract.NUM_PAIR_CHAR();
+    NUM_COUPLE       = await f473Contract.NUM_COUPLE_CHAR();
+    NUM_SOLO_AUDIO   = await f473Contract.NUM_SOLO_AUDIO();
+    NUM_PAIR_AUDIO   = await f473Contract.NUM_PAIR_AUDIO();
+    NUM_COUPLE_AUDIO = await f473Contract.NUM_COUPLE_AUDIO();
+    NUM_BACKGROUNDS  = await f473Contract.NUM_BACKGROUNDS();
   });
 
   it('URI should return as expected', async function () {
@@ -97,6 +105,11 @@ describe('F473', function () {
 
       ethers.provider.send("evm_increaseTime", [60 * 10]); // Increase by 10 minutes
       ethers.provider.send("evm_mine");
+
+      // Do some work, but not in the last block since we're going to do something else after
+      if (iter < 23) {
+        await f473Contract.connect(acct1).roll();
+      }
     }
 
     let level = await f473Contract.getLevel();
@@ -124,6 +137,9 @@ describe('F473', function () {
   });
 
   it('Should allow player to claim a card during level 1', async function () {
+    // Get the current time slice
+    //let timeSlice = await f473Contract.getTimeSlice();
+
     // See what character card we're claiming
     let character = await f473Contract.getCurrentCardCharacter(0);
     let background = await f473Contract.getCurrentCardBackground(0);
@@ -377,5 +393,22 @@ describe('F473', function () {
     // Make sure all three events fired
     expect(eventsPresent).to.equal(3);
   });
+
+  it('Double check that every random number is unique', async function () {
+    let timeSlice = (await f473Contract.getTimeSlice()).toNumber();
+    let lastTsRandomNumber;
+    for (let idx = 0; idx < timeSlice + 3; idx++) {
+      let thisRandomNumber = await f473Contract.getRandomNumber(idx);
+      let tsRandomNumber = await f473Contract.randomNumbers(idx);
+
+      if (tsRandomNumber.toString() !== '0') {
+        lastTsRandomNumber = tsRandomNumber;
+      }
+
+      expect(thisRandomNumber).to.equal(lastTsRandomNumber);
+    }
+  });
+
+
 
 });

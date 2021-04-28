@@ -10,14 +10,14 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 {
 	// NFTs Config
-	uint256 constant NUM_SOLO_CHAR    = 45;
-	uint256 constant NUM_PAIR_CHAR    = 21;
-	uint256 constant NUM_COUPLE_CHAR  = 6;
-	uint256 constant NUM_BACKGROUNDS  = 9;
-	uint256 constant NUM_SOLO_AUDIO   = 3;
-	uint256 constant NUM_PAIR_AUDIO   = 3;
-	uint256 constant NUM_COUPLE_AUDIO = 3;
-	uint256 constant NUM_FINAL_AUDIO  = 1;
+	uint256 public constant NUM_SOLO_CHAR    = 45;
+	uint256 public constant NUM_PAIR_CHAR    = 30;
+	uint256 public constant NUM_COUPLE_CHAR  = 15;
+	uint256 public constant NUM_BACKGROUNDS  = 9;
+	uint256 public constant NUM_SOLO_AUDIO   = 3;
+	uint256 public constant NUM_PAIR_AUDIO   = 3;
+	uint256 public constant NUM_COUPLE_AUDIO = 3;
+	uint256 public constant NUM_FINAL_AUDIO  = 1;
 
 	// Bitmasks for NFT IDs
 	uint256 constant CHARACTER_BITMASK   = 0x00ff;
@@ -26,6 +26,12 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 	uint256 constant CHARACTER_BITSHIFT  = 0;
 	uint256 constant BACKGROUND_BITSHIFT = 8;
 	uint256 constant AUDIO_BITSHIFT      = 12;
+	uint256 constant HEARTS_BITSHIFT     = 16;
+
+	// Hearts token
+	uint256 constant HEARTS_ID              = 0x10000;
+	uint256 constant NUM_HEARTS_MINTED_TO   = 25;
+	uint256 constant NUM_HEARTS_MINTED_FROM = 25;
 
 	// Game Config
 	uint256 constant NUM_LEVELS = 9;
@@ -40,12 +46,15 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 	uint256 GAME_START;
 	bool GAME_OVER = false;
 
+	// Addtl Ownership Info
+	mapping (uint256 => mapping(address => uint256)) _charBalances;
+
 	// Allowlist & Logic
 	mapping (address => bool) allowedAddresses;
 	mapping (address => uint256) addressLastMove;
 
 	// RNG
-	mapping (uint256 => uint256) randomNumbers;
+	mapping (uint256 => uint256) public randomNumbers;
 	uint256 lastRandomTimeSlice;
 
 	/**
@@ -56,10 +65,23 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		ERC1155("https://localhost/{uri}.json")
 		Ownable()
 	{
+		// Set the game start
 		GAME_START = block.timestamp;
+
+		// Set the first two ranom numbers
 		randomNumbers[0] = uint256(
 			keccak256(
 				abi.encodePacked(
+					blockhash(block.number - 1),
+					_msgSender()
+				)
+			)
+		);
+
+		randomNumbers[1] = uint256(
+			keccak256(
+				abi.encodePacked(
+					randomNumbers[0],
 					blockhash(block.number - 1),
 					_msgSender()
 				)
@@ -83,7 +105,14 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 	}
 
 	modifier nextRandomNumber() {
-		lastRandomTimeSlice = getTimeSlice() + 1;
+		// Do everything else first
+		_;
+
+		// We pick two ahead because a time slice is effectively ten minutes, which
+		// is safely within the length of reorgs that one can expect on Polygon and
+		// we don't want a reorg to happen on blocks right before the slice turnover
+		lastRandomTimeSlice = getTimeSlice() + 2;
+
 		randomNumbers[lastRandomTimeSlice] = uint256(
 			keccak256(
 				abi.encodePacked(
@@ -93,7 +122,6 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 				)
 			)
 		);
-		_;
 	}
 
 	modifier oneActionPerAddressPerTimeSlice() {
@@ -161,7 +189,7 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		require(getCurrentCardCharacter(_index) <= NUM_SOLO_CHAR, "Can only claim solo cards");
 
 		// If allowed, mint
-		_mint(_msgSender(), constructCard(_index), 1, "");
+		_mintCard(_msgSender(), constructCard(_index), 1, "");
 	}
 
 	function tradeForPairCard(
@@ -192,7 +220,112 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		safeTransferFrom(_msgSender(), address(this), _cardId2, 1, "");
 
 		// If allowed, mint
-		_mint(_msgSender(), constructCard(_index), 1, "");
+		_mintCard(_msgSender(), constructCard(_index), 1, "");
+	}
+
+
+	function _mintCard(
+		address account,
+		uint256 id,
+		uint256 amount,
+		bytes memory data
+	)
+		internal
+		virtual
+	{
+		_mint(account, id, amount, data);
+
+		// Keep track of character balances too
+		(uint256 character,,) = deconstructCard(id);
+		_charBalances[character][account] += amount;
+	}
+
+
+	/**
+	* @dev See {IERC1155-safeTransferFrom}.
+	*/
+	function safeTransferFrom(
+		address from,
+		address to,
+		uint256 id,
+		uint256 amount,
+		bytes memory data
+	)
+		public
+		virtual
+		override
+	{
+		// Keep track of character balances too
+		(uint256 character,,) = deconstructCard(id);
+		uint256 fromBalance = _charBalances[character][from];
+		require(fromBalance >= amount, "ERC1155: insufficient character balance for transfer");
+		_charBalances[character][from] = fromBalance - amount;
+
+		// Grant hearts if possible - must be a paired solo card
+		if (character > NUM_SOLO_CHAR && character <= NUM_SOLO_CHAR + NUM_PAIR_CHAR) {
+			// If this character has a pair, check if the recipient has it
+			// Starts at 46 currently, ends at 65
+			uint256 pairCharacter = (character % 2 == 0) ? character + 1 : character - 1;
+
+			// If this account owns one of the pairs, then grant hearts
+			if (_charBalances[pairCharacter][to] > 0) {
+				_mint(to, HEARTS_ID, NUM_HEARTS_MINTED_TO, "");
+				_mint(from, HEARTS_ID, NUM_HEARTS_MINTED_FROM, "");
+			}
+
+			// We burn the one sent
+			_burn(from, id, amount);
+
+			// We find and burn one owned by the other person
+			//for (uint256 idx = 0; idx < ) {
+//
+			//}
+		} else {
+			// Otherwise just transfer
+			super.safeTransferFrom(from, to, id, amount, data);
+			_charBalances[character][to] += amount;
+		}
+	}
+
+	/**
+	* @dev See {IERC1155-safeBatchTransferFrom}.
+	*/
+	function safeBatchTransferFrom(
+		address from,
+		address to,
+		uint256[] memory ids,
+		uint256[] memory amounts,
+		bytes memory data
+	)
+		public
+		virtual
+		override
+	{
+		super.safeBatchTransferFrom(from, to, ids, amounts, data);
+
+		for (uint256 idx = 0; idx < ids.length; idx++) {
+			uint256 id     = ids[idx];
+			uint256 amount = amounts[idx];
+
+			// Keep track of character balances too
+			(uint256 character,,) = deconstructCard(id);
+			uint256 fromBalance = _charBalances[character][from];
+			require(fromBalance >= amount, "ERC1155: insufficient character balance for transfer");
+			_charBalances[character][from] = fromBalance - amount;
+			_charBalances[character][to] += amount;
+
+			// Grant hearts if possible - must be a paired solo card
+			if (character > NUM_SOLO_CHAR && character <= NUM_SOLO_CHAR + NUM_PAIR_CHAR) {
+				// If this character has a pair, check if the recipient has it
+				// Starts at 46 currently, ends at 65
+				uint256 pairCharacter = (character % 2 == 0) ? character + 1 : character - 1;
+
+				// If this account owns one of the pairs, then grant hearts
+				if (_charBalances[pairCharacter][to] > 0) {
+
+				}
+			}
+		}
 	}
 
 
