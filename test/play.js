@@ -31,13 +31,13 @@ describe('F473', function () {
     const F473 = await ethers.getContractFactory('F473');
     f473Contract = await F473.deploy();
 
-    NUM_SOLO         = await f473Contract.NUM_SOLO_CHAR();
-    NUM_PAIR         = await f473Contract.NUM_PAIR_CHAR();
-    NUM_COUPLE       = await f473Contract.NUM_COUPLE_CHAR();
-    NUM_SOLO_AUDIO   = await f473Contract.NUM_SOLO_AUDIO();
-    NUM_PAIR_AUDIO   = await f473Contract.NUM_PAIR_AUDIO();
-    NUM_COUPLE_AUDIO = await f473Contract.NUM_COUPLE_AUDIO();
-    NUM_BACKGROUNDS  = await f473Contract.NUM_BACKGROUNDS();
+    NUM_SOLO         = (await f473Contract.NUM_SOLO_CHAR()).toNumber();
+    NUM_PAIR         = (await f473Contract.NUM_PAIR_CHAR()).toNumber();
+    NUM_COUPLE       = (await f473Contract.NUM_COUPLE_CHAR()).toNumber();
+    NUM_SOLO_AUDIO   = (await f473Contract.NUM_SOLO_AUDIO()).toNumber();
+    NUM_PAIR_AUDIO   = (await f473Contract.NUM_PAIR_AUDIO()).toNumber();
+    NUM_COUPLE_AUDIO = (await f473Contract.NUM_COUPLE_AUDIO()).toNumber();
+    NUM_BACKGROUNDS  = (await f473Contract.NUM_BACKGROUNDS()).toNumber();
   });
 
   it('URI should return as expected', async function () {
@@ -90,6 +90,26 @@ describe('F473', function () {
     expect(response).to.equal(true);
   });
 
+  it('Should allow adding another address to the permitted list, removing, and then adding again', async function () {
+    response = await f473Contract.checkAllowedAddress(acct2.address);
+    expect(response).to.equal(false);
+
+    await f473Contract.setInAllowlist(acct2.address, true);
+
+    response = await f473Contract.checkAllowedAddress(acct2.address);
+    expect(response).to.equal(true);
+
+    await f473Contract.setInAllowlist(acct2.address, false);
+
+    response = await f473Contract.checkAllowedAddress(acct2.address);
+    expect(response).to.equal(false);
+
+    await f473Contract.setInAllowlist(acct2.address, true);
+
+    response = await f473Contract.checkAllowedAddress(acct2.address);
+    expect(response).to.equal(true);
+  });
+
   it('Should iterate through all levels and phases as expected over a 4 hour period', async function () {
     for (let iter = 0; iter < 24; iter++) {
       let level = await f473Contract.getLevel();
@@ -109,6 +129,7 @@ describe('F473', function () {
       // Do some work, but not in the last block since we're going to do something else after
       if (iter < 23) {
         await f473Contract.connect(acct1).roll();
+        await f473Contract.connect(acct2).roll();
       }
     }
 
@@ -380,7 +401,7 @@ describe('F473', function () {
         } else {
           // Make sure that the transfer event has everything expected of it - from, to, id, value
           expect(event.args.from).to.equal(acct1.address);
-          expect(event.args.to).to.equal(f473Contract.address);
+          expect(event.args.to).to.equal('0x0000000000000000000000000000000000000000');
           expect(event.args.id.toString()).to.equal(inputCards.shift());
           expect(event.args.value).to.equal(1);
         }
@@ -393,6 +414,140 @@ describe('F473', function () {
     // Make sure all three events fired
     expect(eventsPresent).to.equal(3);
   });
+
+  it('Allow owner to mint all pair characters to account', async function () {
+    for (let charIdx = NUM_SOLO; charIdx <= NUM_PAIR + NUM_SOLO; charIdx++) {
+      for (let bgIdx = 1; bgIdx <= NUM_BACKGROUNDS; bgIdx++) {
+        for (let audioIdx = NUM_SOLO_AUDIO + 1; audioIdx <= NUM_SOLO_AUDIO + NUM_PAIR_AUDIO; audioIdx++) {
+          await f473Contract.connect(owner).mintCard(acct1.address, charIdx, bgIdx, audioIdx);
+          await f473Contract.connect(owner).mintCard(acct2.address, charIdx, bgIdx, audioIdx);
+        }
+      }
+    }
+  });
+
+  it('Allow acct2 to send a pair to get hearts', async function () {
+    let eventPresent = false;
+
+    for (let charIdx = NUM_SOLO + 1; charIdx <= NUM_PAIR + NUM_SOLO; charIdx += 2) {
+      ethers.provider.send("evm_increaseTime", [60 * 10]);
+      ethers.provider.send("evm_mine");
+
+      let id1 = await f473Contract.constructCardManual(charIdx, 1, 4);
+      let id2 = await f473Contract.constructCardManual(charIdx+1, 1, 4);
+      let tx = await f473Contract.connect(acct2).tradeForHearts(acct2.address, id1, acct2.address, id2);
+      let receipt = await tx.wait();
+
+      // Now review the event
+      for (const event of receipt.events) {
+        if (event.event === 'TransferSingle' && event.args.from === '0x0000000000000000000000000000000000000000') {
+          // Make sure that the transfer event has everything expected of it - from, to, id, value
+          expect(event.args.from).to.equal('0x0000000000000000000000000000000000000000');
+          expect(event.args.to).to.equal(acct2.address);
+          expect(event.args.id.toNumber()).to.equal(parseInt(0x10000, 10));
+          expect(event.args.value).to.equal(1);
+
+          // Make sure an event fired
+          eventPresent = true;
+        }
+      }
+    }
+
+    // Make sure both accounts have hearts
+    expect(await f473Contract.balanceOf(acct1.address, parseInt(0x10000, 10))).to.equal(0);
+    expect(await f473Contract.balanceOf(acct2.address, parseInt(0x10000, 10))).to.equal(NUM_PAIR);
+
+    // Verify that the event fired
+    expect(eventPresent).to.equal(true);
+  });
+
+  it('Allow acct2 to send one of their own and one of acct1 pair solos to get hearts', async function () {
+    let eventPresent = false;
+
+    for (let charIdx = NUM_SOLO + 1; charIdx <= NUM_PAIR + NUM_SOLO; charIdx += 2) {
+      ethers.provider.send("evm_increaseTime", [60 * 10]);
+      ethers.provider.send("evm_mine");
+
+      let id1 = await f473Contract.constructCardManual(charIdx, 1, 5);
+      let id2 = await f473Contract.constructCardManual(charIdx+1, 1, 5);
+      let tx = await f473Contract.connect(acct2).tradeForHearts(acct2.address, id1, acct1.address, id2);
+      let receipt = await tx.wait();
+
+      // Now review the event
+      for (const event of receipt.events) {
+        if (event.event === 'TransferSingle' && event.args.from === '0x0000000000000000000000000000000000000000') {
+          // Make sure that the transfer event has everything expected of it - from, to, id, value
+          expect(event.args.from).to.equal('0x0000000000000000000000000000000000000000');
+          expect(event.args.to).to.be.oneOf([acct1.address, acct2.address]);
+          expect(event.args.id.toNumber()).to.equal(parseInt(0x10000, 10));
+          expect(event.args.value).to.equal(1);
+
+          // Make sure an event fired
+          eventPresent = true;
+        }
+      }
+    }
+
+    // Make sure both accounts have hearts
+    expect(await f473Contract.balanceOf(acct1.address, parseInt(0x10000, 10))).to.equal(NUM_PAIR / 2);
+    expect(await f473Contract.balanceOf(acct2.address, parseInt(0x10000, 10))).to.equal(NUM_PAIR + NUM_PAIR / 2);
+
+    // Verify that the event fired
+    expect(eventPresent).to.equal(true);
+  });
+
+  /*
+  it('Allow acct1 & acct2 to end the game by sending hearts', async function () {
+    do {
+      while ((await f473Contract.getLevel()).toNumber() !== 7) {
+        ethers.provider.send("evm_increaseTime", [60 * 10]);
+        ethers.provider.send("evm_mine");
+      }
+
+      // Roll at level 7 to ensure level 9 changes, goto level 9
+      await f473Contract.connect(acct1).roll();
+      ethers.provider.send("evm_increaseTime", [60 * 20]);
+      ethers.provider.send("evm_mine");
+
+      // 
+
+    } while ((await f473Contract.getLevel()).toNumber() !== 12);
+  });
+  */
+
+  /*
+  it('Allow acct2 to send a pair to acct1 and both get hearts', async function () {
+    let eventPresent = false;
+
+    for (let charIdx = NUM_SOLO; charIdx <= NUM_PAIR + NUM_SOLO; charIdx++) {
+      let id = await f473Contract.constructCardManual(charIdx, 1, 4);
+      let tx = await f473Contract.connect(acct2).safeTransferFrom(acct2.address, acct1.address, id, 1, 0x0);
+      let receipt = await tx.wait();
+
+      // Now review the event
+      for (const event of receipt.events) {
+        if (event.event === 'TransferSingle' && event.args.from === '0x0000000000000000000000000000000000000000') {
+          // Make sure that the transfer event has everything expected of it - from, to, id, value
+          expect(event.args.from).to.equal('0x0000000000000000000000000000000000000000');
+          expect(event.args.to).to.be.oneOf([acct1.address, acct2.address]);
+          expect(event.args.id.toNumber()).to.equal(parseInt(0x10000, 10));
+          expect(event.args.value).to.equal(1);
+
+          // Make sure an event fired
+          eventPresent = true;
+        }
+      }
+    }
+
+    // Make sure both accounts have hearts
+    expect(await f473Contract.balanceOf(acct1.address, parseInt(0x10000, 10))).to.equal(1);
+    expect(await f473Contract.balanceOf(acct2.address, parseInt(0x10000, 10))).to.equal(1);
+
+    // Verify that the event fired
+    expect(eventPresent).to.equal(true);
+  });
+  */
+
 
   it('Double check that every random number is unique', async function () {
     let timeSlice = (await f473Contract.getTimeSlice()).toNumber();
@@ -408,7 +563,6 @@ describe('F473', function () {
       expect(thisRandomNumber).to.equal(lastTsRandomNumber);
     }
   });
-
 
 
 });

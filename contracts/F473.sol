@@ -30,8 +30,15 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 
 	// Hearts token
 	uint256 constant HEARTS_ID              = 0x10000;
-	uint256 constant NUM_HEARTS_MINTED_TO   = 25;
-	uint256 constant NUM_HEARTS_MINTED_FROM = 25;
+	uint256 constant NUM_HEARTS_MINTED_TO   = 1;
+	uint256 constant NUM_HEARTS_MINTED_FROM = 1;
+
+	// Winning the game
+	uint256 constant NUM_HEARTS_LEVEL_NINE_COUPLE = 100;
+	uint256 constant NUM_HEARTS_LEVEL_NINE_OTHER = 10;
+	mapping(uint256 => uint256) couplesClaimed;
+	mapping(uint256 => uint256) heartsBurned;
+	mapping(uint256 => uint256) heartDecayRate;
 
 	// Game Config
 	uint256 constant NUM_LEVELS = 9;
@@ -47,7 +54,7 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 	bool GAME_OVER = false;
 
 	// Addtl Ownership Info
-	mapping (uint256 => mapping(address => uint256)) _charBalances;
+	//mapping (uint256 => mapping(address => uint256)) _charBalances;
 
 	// Allowlist & Logic
 	mapping (address => bool) allowedAddresses;
@@ -94,6 +101,11 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		_;
 	}
 
+	modifier gameNotOver() {
+		require(!GAME_OVER, "Game is over");
+		_;
+	}
+
 	modifier validTimeSlice(uint256 _timeSlice) {
 		require(_timeSlice <= getTimeSlice(), "Invalid time slice");
 		_;
@@ -112,16 +124,21 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		// is safely within the length of reorgs that one can expect on Polygon and
 		// we don't want a reorg to happen on blocks right before the slice turnover
 		lastRandomTimeSlice = getTimeSlice() + 2;
+		updateRandomNumber(lastRandomTimeSlice);
+	}
 
-		randomNumbers[lastRandomTimeSlice] = uint256(
-			keccak256(
-				abi.encodePacked(
-					blockhash(block.number - 1),
-					_msgSender(),
-					randomNumbers[lastRandomTimeSlice]
-				)
-			)
-		);
+	modifier decayHeartsBurned() {
+		// Do everything else first
+		_;
+
+		if (!GAME_OVER && getLevel() == 9) {
+			uint256 timeSlice = getTimeSlice();
+			if (heartsBurned[timeSlice] > (heartDecayRate[timeSlice] + 1)) {
+				heartsBurned[timeSlice] -= (heartDecayRate[timeSlice] + 1);
+			} else {
+				heartsBurned[timeSlice] = 0;
+			}
+		}
 	}
 
 	modifier oneActionPerAddressPerTimeSlice() {
@@ -130,6 +147,22 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		require(addressLastMove[_msgSender()] < timeSlice, "Already moved this time frame");
 		addressLastMove[_msgSender()] = timeSlice;
 		_;
+	}
+
+	function updateRandomNumber(
+		uint256 _timeSlice
+	)
+		internal
+	{
+		randomNumbers[_timeSlice] = uint256(
+			keccak256(
+				abi.encodePacked(
+					blockhash(block.number - 1),
+					_msgSender(),
+					randomNumbers[_timeSlice]
+				)
+			)
+		);
 	}
 
 	function setBaseUri(
@@ -171,6 +204,7 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		onlyAllowedAddress
 		oneActionPerAddressPerTimeSlice
 		nextRandomNumber
+		decayHeartsBurned
 	{
 		// Doesn't do anything else, forces a random roll change, but acts as a turn
 	}
@@ -181,8 +215,10 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		public
 		nonReentrant
 		onlyAllowedAddress
+		gameNotOver
 		oneActionPerAddressPerTimeSlice
 		nextRandomNumber
+		decayHeartsBurned
 	{
 		// Determine whether this card is permissible to be claimed
 		// Look up the token ID based on the index & game state
@@ -200,8 +236,10 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		public
 		nonReentrant
 		onlyAllowedAddress
+		gameNotOver
 		oneActionPerAddressPerTimeSlice
 		nextRandomNumber
+		decayHeartsBurned
 	{
 		// Determine whether this card is permissible to be claimed
 		// Look up the token ID based on the index & game state
@@ -216,11 +254,130 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		require(character2 <= NUM_SOLO_CHAR, "Can only trade in solo cards");
 
 		// Trade in the cards
-		safeTransferFrom(_msgSender(), address(this), _cardId1, 1, "");
-		safeTransferFrom(_msgSender(), address(this), _cardId2, 1, "");
+		_burn(_msgSender(), _cardId1, 1);
+		_burn(_msgSender(), _cardId2, 1);
 
 		// If allowed, mint
 		_mintCard(_msgSender(), constructCard(_index), 1, "");
+	}
+
+	function tradeForHearts(
+		address _cardId1Owner,
+		uint256 _cardId1,
+		address _cardId2Owner,
+		uint256 _cardId2
+	)
+		public
+		nonReentrant
+		onlyAllowedAddress
+		gameNotOver
+		oneActionPerAddressPerTimeSlice
+		nextRandomNumber
+		decayHeartsBurned
+	{
+		// Require that one of the owners are the sender
+		require(_msgSender() == _cardId1Owner || _msgSender() == _cardId2Owner, "Caller must own at least one card");
+
+		// Check that the input cards are valid
+		(uint256 character1,,) = deconstructCard(_cardId1);
+		require(character1 > NUM_SOLO_CHAR && character1 <= NUM_SOLO_CHAR + NUM_PAIR_CHAR, "Can only trade in paired solo cards");
+
+		(uint256 character2,,) = deconstructCard(_cardId2);
+		require(character2 > NUM_SOLO_CHAR && character2 <= NUM_SOLO_CHAR + NUM_PAIR_CHAR, "Can only trade in paired solo cards");
+
+		// Require that the input cards are a pair - starts at an even number (46)
+		require(character1 / 2 == character2 / 2, "Not a pair");
+
+		// Trade in the cards
+		_burn(_cardId1Owner, _cardId1, 1);
+		_burn(_cardId2Owner, _cardId2, 1);
+
+		// Mint hearts
+		_mint(_cardId1Owner, HEARTS_ID, NUM_HEARTS_MINTED_TO, "");
+		_mint(_cardId2Owner, HEARTS_ID, NUM_HEARTS_MINTED_FROM, "");
+	}
+
+	function tradeForCoupleCard(
+		uint256 _cardId1
+	)
+		public
+		nonReentrant
+		onlyAllowedAddress
+		gameNotOver
+		oneActionPerAddressPerTimeSlice
+		nextRandomNumber
+		decayHeartsBurned
+	{
+		// Make sure we're at the last level
+		require(getLevel() == 9, "Only during level nine");
+
+		// Determine whether this card is permissible to be claimed
+		// Look up the token ID based on the index & game state
+		uint256 selectedCharacter = getCurrentCardCharacter(0);
+		require(selectedCharacter > NUM_SOLO_CHAR + NUM_PAIR_CHAR && selectedCharacter <= (NUM_SOLO_CHAR + NUM_PAIR_CHAR + NUM_COUPLE_CHAR), "Can only claim couple cards");
+
+		// Trade in the cards
+		_burn(_msgSender(), _cardId1, 1);
+
+		// If allowed, mint
+		_mintCard(_msgSender(), constructCard(0), 1, "");
+
+		// Increase decay rate
+		uint256 timeSlice = getTimeSlice();
+		heartDecayRate[timeSlice] += ++couplesClaimed[timeSlice];
+	}
+
+	function burnHearts(
+		uint256 _amount
+	)
+		public
+		nonReentrant
+		onlyAllowedAddress
+		gameNotOver
+		nextRandomNumber
+		decayHeartsBurned
+		returns (bool)
+	{
+		// Make sure we're at the last level
+		require(getLevel() == 9, "Only during level nine");
+
+		// If allowed, burn
+		_burn(_msgSender(), HEARTS_ID, _amount);
+
+		// Keep track of number burned
+		uint256 timeSlice = getTimeSlice();
+		heartsBurned[timeSlice] += _amount;
+
+		// Perform a specific action based on current card
+		(uint256 character,,) = deconstructCard(getCurrentCardCharacter(0));
+
+		// Character card is a couple card
+		if (character > NUM_SOLO_CHAR + NUM_PAIR_CHAR) {
+			if (heartsBurned[timeSlice] >= NUM_HEARTS_LEVEL_NINE_COUPLE) {
+				GAME_OVER = true;
+			}
+		} else {
+			if (heartsBurned[timeSlice] >= NUM_HEARTS_LEVEL_NINE_OTHER) {
+				heartsBurned[timeSlice] = 0; // Back to original burned number
+				heartDecayRate[timeSlice] = 0; // Decay rate goes to 0 (in effect, 1)
+				updateRandomNumber(getTimeSlice()); // Change this level's random number, changes the card
+			}
+		}
+
+		return GAME_OVER;
+	}
+
+
+	function mintCard(
+		address to,
+		uint256 character,
+		uint256 background,
+		uint256 audio
+	)
+		external
+		onlyOwner
+	{
+		_mintCard(to, constructCardManual(character, background, audio), 1, "");
 	}
 
 
@@ -236,14 +393,15 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		_mint(account, id, amount, data);
 
 		// Keep track of character balances too
-		(uint256 character,,) = deconstructCard(id);
-		_charBalances[character][account] += amount;
+		//(uint256 character,,) = deconstructCard(id);
+		//_charBalances[character][account] += amount;
 	}
 
 
 	/**
 	* @dev See {IERC1155-safeTransferFrom}.
 	*/
+	/*
 	function safeTransferFrom(
 		address from,
 		address to,
@@ -262,7 +420,12 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		_charBalances[character][from] = fromBalance - amount;
 
 		// Grant hearts if possible - must be a paired solo card
-		if (character > NUM_SOLO_CHAR && character <= NUM_SOLO_CHAR + NUM_PAIR_CHAR) {
+		if (
+			to != address(0x0) &&
+			to != address(this) &&
+			character > NUM_SOLO_CHAR &&
+			character <= NUM_SOLO_CHAR + NUM_PAIR_CHAR
+		) {
 			// If this character has a pair, check if the recipient has it
 			// Starts at 46 currently, ends at 65
 			uint256 pairCharacter = (character % 2 == 0) ? character + 1 : character - 1;
@@ -271,25 +434,38 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 			if (_charBalances[pairCharacter][to] > 0) {
 				_mint(to, HEARTS_ID, NUM_HEARTS_MINTED_TO, "");
 				_mint(from, HEARTS_ID, NUM_HEARTS_MINTED_FROM, "");
+
+				// We burn the one sent
+				_burn(from, id, amount);
+
+				// We find and burn one owned by the other person
+				bool burnt = false;
+				for (uint256 audio_idx = 1; audio_idx <= NUM_PAIR_AUDIO + NUM_COUPLE_AUDIO; audio_idx++) {
+					for (uint256 bg_idx = 1; bg_idx <= NUM_BACKGROUNDS; bg_idx++) {
+						uint256 searchId = constructCardManual(pairCharacter, bg_idx, audio_idx);
+						if (balanceOf(to, searchId) > 0) {
+							_burn(to, searchId, 1); // Just burn one because exact number is intractable
+							burnt = true;
+							break;
+						}
+					}
+					if (burnt) {
+						break;
+					}
+				}
 			}
-
-			// We burn the one sent
-			_burn(from, id, amount);
-
-			// We find and burn one owned by the other person
-			//for (uint256 idx = 0; idx < ) {
-//
-			//}
 		} else {
 			// Otherwise just transfer
 			super.safeTransferFrom(from, to, id, amount, data);
 			_charBalances[character][to] += amount;
 		}
 	}
+	*/
 
 	/**
 	* @dev See {IERC1155-safeBatchTransferFrom}.
 	*/
+	/*
 	function safeBatchTransferFrom(
 		address from,
 		address to,
@@ -327,6 +503,7 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 			}
 		}
 	}
+	*/
 
 
 	/**
@@ -593,6 +770,30 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable/*, Context*/
 		uint256 character = getCardCharacter(timeSlice, _index);
 		uint256 background = getCardBackground(timeSlice, _index);
 		uint256 audio = getLevelAudio(timeSlice);
+
+		return constructCardManual(character, background, audio);
+	}
+
+	function constructCardManual(
+		uint256 character,
+		uint256 background,
+		uint256 audio
+	)
+		public
+		view
+		returns (uint256)
+	{
+		require(character >= 1 && character <= NUM_SOLO_CHAR + NUM_PAIR_CHAR + NUM_COUPLE_CHAR);
+		require(background >= 1 && background <= NUM_BACKGROUNDS);
+		require(audio >= 1 && audio <= NUM_SOLO_AUDIO + NUM_PAIR_AUDIO + NUM_COUPLE_AUDIO);
+
+		if (character <= NUM_SOLO_CHAR) {
+			require(audio >= 1 && audio <= NUM_SOLO_AUDIO + NUM_PAIR_AUDIO + NUM_COUPLE_AUDIO);
+		} else if (character <= NUM_SOLO_CHAR + NUM_PAIR_CHAR) {
+			require(audio > NUM_SOLO_AUDIO && audio <= NUM_SOLO_AUDIO + NUM_PAIR_AUDIO + NUM_COUPLE_AUDIO);
+		} else if (character <= NUM_SOLO_CHAR + NUM_PAIR_CHAR + NUM_COUPLE_CHAR) {
+			require(audio > NUM_SOLO_AUDIO + NUM_PAIR_AUDIO && audio <= NUM_SOLO_AUDIO + NUM_PAIR_AUDIO + NUM_COUPLE_AUDIO);
+		}
 
 		return (audio << AUDIO_BITSHIFT) + (background << BACKGROUND_BITSHIFT) + character;
 	}
