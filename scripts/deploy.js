@@ -17,15 +17,13 @@ async function main() {
 
   console.log("Account balance:", (await deployer.getBalance()).toString());
 
-  /*
   // We get the contract to deploy
-  const NDS0ShellConverter = await ethers.getContractFactory('NDS0ShellConverter');
+  const F473 = await ethers.getContractFactory('F473');
 
-  // Deploy NDS0ShellConverter, this will set caller as the Owner
-  const ndS0ShellConverter = await NDS0ShellConverter.deploy();
-  await ndS0ShellConverter.deployed();
-  console.log('NDS0ShellConverter deployed to:', ndS0ShellConverter.address);
-  */
+  // Deploy F473, this will set caller as the Owner
+  const f473Contract = await F473.deploy();
+  await f473Contract.deployed();
+  console.log('F473 deployed to:', f473Contract.address);
 }
 
 main()
