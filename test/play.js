@@ -431,10 +431,21 @@ describe('F473', function () {
     expect(eventsPresent).to.equal(3);
   });
 
-  it('Allow owner to mint all pair characters to account', async function () {
+  it('Allow owner to mint subset of pair characters to account that are necessary for tests', async function () {
+    for (let charIdx = NUM_SOLO; charIdx <= NUM_PAIR + NUM_SOLO; charIdx++) {
+      for (let bgIdx = 1; bgIdx <= 1; bgIdx++) {
+        for (let audioIdx = NUM_SOLO_AUDIO + 1; audioIdx <= NUM_SOLO_AUDIO + NUM_PAIR_AUDIO; audioIdx++) {
+          await f473Contract.connect(owner).mintCard(acct1.address, charIdx, bgIdx, audioIdx);
+          await f473Contract.connect(owner).mintCard(acct2.address, charIdx, bgIdx, audioIdx);
+        }
+      }
+    }
+  });
+
+  it.skip('Allow owner to mint all pair characters to account', async function () {
     for (let charIdx = NUM_SOLO; charIdx <= NUM_PAIR + NUM_SOLO; charIdx++) {
       for (let bgIdx = 1; bgIdx <= NUM_BACKGROUNDS; bgIdx++) {
-        for (let audioIdx = NUM_SOLO_AUDIO + 1; audioIdx <= NUM_SOLO_AUDIO + NUM_PAIR_AUDIO; audioIdx++) {
+        for (let audioIdx = NUM_SOLO_AUDIO + 1; audioIdx <= NUM_SOLO_AUDIO + NUM_PAIR_AUDIO + NUM_COUPLE_AUDIO; audioIdx++) {
           await f473Contract.connect(owner).mintCard(acct1.address, charIdx, bgIdx, audioIdx);
           await f473Contract.connect(owner).mintCard(acct2.address, charIdx, bgIdx, audioIdx);
         }
@@ -540,7 +551,7 @@ describe('F473', function () {
   // Leaving here
     //console.log((await f473Contract.getLevel()).toNumber());
     //console.log((await f473Contract.getCurrentCardCharacter(0)).toNumber());
-    //console.log((await f473Contract.getHeartsBurned()).toNumber());
+    //console.log((await f473Contract.getLoveMeterFilled()).toNumber());
     //console.log((await f473Contract.getLoveDecayRate()).toNumber());
     //console.log((await f473Contract.getLoveMeterSize()).toNumber());
     //console.log(randomRoll, newRandomRoll);
@@ -555,6 +566,7 @@ describe('F473', function () {
     expect((await f473Contract.getCurrentCardCharacter(0)).toNumber()).to.be.lte(NUM_SOLO + NUM_PAIR);
     expect((await f473Contract.getLoveDecayRate()).toNumber()).to.equal(1);
     expect((await f473Contract.getLoveMeterSize()).toNumber()).to.equal(10);
+    expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(0);
 
     // Get the current random roll
     let timeSlice = (await f473Contract.getTimeSlice()).toNumber();
@@ -566,11 +578,15 @@ describe('F473', function () {
 
     let newRandomRoll = (await f473Contract.getRandomNumber(timeSlice)).toString();
 
+    // Expect this to be reset
+    expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(0);
+
+    // Expect new random roll locally
     expect(randomRoll).to.not.equal(newRandomRoll);
   });
 
   it('Trade for & claim couple card, Verify that decay rate speeds up as wallets claim couples', async function () {
-    // Start by finding a level that starts without a couple
+    // Start by finding a level that starts with a couple
     do {
       await forwardToNextLevel9();
     } while ((await f473Contract.getCurrentCardCharacter(0)).toNumber() <= NUM_SOLO + NUM_PAIR);
@@ -611,6 +627,48 @@ describe('F473', function () {
     // Increase in decay rate
     expect((await f473Contract.getLoveDecayRate()).toNumber()).to.equal(2);
     expect((await f473Contract.getLoveMeterSize()).toNumber()).to.equal(100);
+  });
+
+  it('Allow players to beat the game', async function () {
+    // Start by finding a level that starts without a couple
+    do {
+      await forwardToNextLevel9();
+    } while ((await f473Contract.getCurrentCardCharacter(0)).toNumber() <= NUM_SOLO + NUM_PAIR);
+
+    expect((await f473Contract.getLevel()).toNumber()).to.equal(9);
+    expect((await f473Contract.getCurrentCardCharacter(0)).toNumber()).to.be.gt(NUM_SOLO + NUM_PAIR);
+    expect((await f473Contract.getLoveDecayRate()).toNumber()).to.equal(1);
+    expect((await f473Contract.getLoveMeterSize()).toNumber()).to.equal(100);
+    expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(0);
+
+    // Provide the hearts needed from the owner
+    await f473Contract.connect(owner).mintHearts(acct1.address, 100);
+    await f473Contract.connect(owner).mintHearts(acct2.address, 100);
+
+    // Submit all hearts needed
+    await f473Contract.connect(acct1).burnHearts(10);
+    expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(9); // Decay rate of 1
+
+    await f473Contract.connect(acct2).burnHearts(10);
+    expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(18); // Decay rate of 1
+
+    await f473Contract.connect(acct1).burnHearts(50);
+    expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(67); // Decay rate of 1
+
+    await f473Contract.connect(acct2).burnHearts(30);
+    expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(96); // Decay rate of 1
+
+    // Sanity check
+    expect(await f473Contract.GAME_OVER()).to.equal(false);
+
+    // End the game
+    await f473Contract.connect(acct1).burnHearts(7);
+    expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(103); // Decay rate does not matter when game is over
+
+    // Game over state
+    expect((await f473Contract.getLevel()).toNumber()).to.equal(12);
+    expect((await f473Contract.getPhase()).toNumber()).to.equal(4);
+    expect(await f473Contract.GAME_OVER()).to.equal(true);
   });
 
 

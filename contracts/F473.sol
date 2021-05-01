@@ -46,8 +46,8 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 	uint256 constant TOTAL_CARD_SLOTS = 9;
 
 	// Game State
-	uint256 GAME_START;
-	bool GAME_OVER = false;
+	uint256 public GAME_START;
+	bool public GAME_OVER = false;
 
 	// Addtl Ownership Info
 	//mapping (uint256 => mapping(address => uint256)) _charBalances;
@@ -379,14 +379,6 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 	 * Game Information
 	 */
 
-	function getHeartsBurned()
-		public
-		view
-		returns (uint256)
-	{
-		return heartsBurned[getTimeSlice()];
-	}
-
 	function getLoveDecayRate()
 		public
 		view
@@ -417,6 +409,14 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 		}
 
 		return NUM_HEARTS_LEVEL_NINE_OTHER;
+	}
+
+	function getLoveMeterFilled()
+		public
+		view
+		returns (uint256)
+	{
+		return heartsBurned[getTimeSlice()];
 	}
 
 	function getRandomNumber(
