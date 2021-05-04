@@ -12,7 +12,7 @@ require('dotenv').config();
 
 module.exports = {
   solidity: '0.8.0',
-  defaultNetwork: 'hardhat', //'localhost',
+  defaultNetwork: 'localhost', // 'hardhat'
   networks: {
     hardhat: {
       allowUnlimitedContractSize: true
