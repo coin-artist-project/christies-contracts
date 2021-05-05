@@ -7,6 +7,7 @@
 		"chain": "hardhat node",
 		"compile": "hardhat compile",
 		"deploy": "hardhat run ./scripts/deploy.js",
+		"rollGotoNextLevel": "hardhat run ./scripts/rollGotoNextLevel.js",
 		"setAllowlist": "hardhat run ./scripts/setAllowlist.js",
 		"test": "hardhat test --network hardhat"
 	},

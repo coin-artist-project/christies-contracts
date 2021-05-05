@@ -9,9 +9,7 @@ const { ethers } = require('hardhat');
 const CONTRACT_ADDRESS = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
 
 /** CONFIG **/
-//const TO_ADDRESS = '0x9eE5E3Ff06425CF972E77c195F70Ecb18aC23d7f';
-const TO_ADDRESS = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'; // address 0 of hardhat default
-const TRUE_OR_FALSE = true;
+const FROM_ADDRESS = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'; // address 0 of hardhat default
 /** CONFIG **/
 
 async function main() {
@@ -24,7 +22,9 @@ async function main() {
 
   const provider = await ethers.getDefaultProvider();
 
-  let tx = await contract.setInAllowlist(TO_ADDRESS, TRUE_OR_FALSE);
+  ethers.provider.send("evm_increaseTime", [60 * 10]);
+
+  let tx = await contract.roll();
   let receipt = await tx.wait();
   console.log(receipt);
 }
