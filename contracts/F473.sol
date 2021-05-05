@@ -669,7 +669,7 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 		// Draw unique cards from the batch
 		uint256 lastIndex = NUM_LEVELS - getLevel();
 		uint256[] memory cardBackgrounds = new uint256[](9);
-		for (uint256 iter; iter < lastIndex; iter++) {
+		for (uint256 iter; iter <= lastIndex; iter++) {
 			cardBackgrounds[iter] = getCardBackground(_timeSlice, iter);
 		}
 

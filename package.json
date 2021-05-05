@@ -8,7 +8,7 @@
 		"compile": "hardhat compile",
 		"deploy": "hardhat run ./scripts/deploy.js",
 		"setAllowlist": "hardhat run ./scripts/setAllowlist.js",
-		"test": "hardhat test"
+		"test": "hardhat test --network hardhat"
 	},
 	"author": "",
 	"license": "ISC",
