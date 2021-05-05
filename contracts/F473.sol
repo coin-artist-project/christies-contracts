@@ -210,12 +210,22 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 	)
 		internal
 	{
+		heartsMinted += amount;
+		_mint(to, _heartsRandom(0), amount, "");
+	}
+
+	function _heartsRandom(
+		uint256 _idxOffset
+	)
+		internal
+		view
+		returns (uint256)
+	{
 		// Get the current random number & deck size right now
 		// Skip the number of levels * 6 -> 2^6 = 64; Max is 108 bits shifted with 9 levels & indices, +2 for audio + hearts (120 bits shifted)
-		uint256 randomNumber = getRandomNumber(getTimeSlice()) >> ((NUM_LEVELS + TOTAL_CARD_SLOTS + 2 + heartsMinted % 2) * 6);
-		uint256 heartsId = HEARTS_ID + ((randomNumber + heartsMinted) % NUM_HEARTS_COLORS) + 1;
-		heartsMinted += amount;
-		_mint(to, heartsId, amount, "");
+		uint256 timeSlice = getTimeSlice();
+		uint256 randomNumber = getRandomNumber(timeSlice) >> ((NUM_LEVELS + TOTAL_CARD_SLOTS + 2 + heartsMinted % 2 + heartsBurned[timeSlice] % 2) * 6);
+		return HEARTS_ID + ((randomNumber + heartsMinted + heartsBurned[timeSlice] + _idxOffset) % NUM_HEARTS_COLORS) + 1;
 	}
 
 
@@ -368,7 +378,7 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 		address from = _msgSender();
 		uint256 amountLeftToBurn = _amount;
 		for (uint256 idx = 0; idx < NUM_HEARTS_COLORS; idx++) {
-			uint256 heartsId = HEARTS_ID + idx + 1;
+			uint256 heartsId = _heartsRandom(idx);
 			uint256 balance = balanceOf(from, heartsId);
 
 			if (balance > 0 && balance < amountLeftToBurn) {
