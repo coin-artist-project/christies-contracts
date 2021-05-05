@@ -479,7 +479,8 @@ describe('F473', function () {
           // Make sure that the transfer event has everything expected of it - from, to, id, value
           expect(event.args.from).to.equal('0x0000000000000000000000000000000000000000');
           expect(event.args.to).to.equal(acct2.address);
-          expect(event.args.id.toNumber()).to.equal(parseInt(0x10000, 10));
+          expect(event.args.id.toNumber()).to.be.gte(parseInt(0x10001, 10));
+          expect(event.args.id.toNumber()).to.be.lte(parseInt(0x10007, 10));
           expect(event.args.value).to.equal(1);
 
           // Make sure an event fired
@@ -489,8 +490,17 @@ describe('F473', function () {
     }
 
     // Make sure both accounts have hearts
-    expect(await f473Contract.balanceOf(acct1.address, parseInt(0x10000, 10))).to.equal(0);
-    expect(await f473Contract.balanceOf(acct2.address, parseInt(0x10000, 10))).to.equal(NUM_PAIR);
+    expect((await f473Contract.balanceOfBatch([
+      acct1.address, acct1.address, acct1.address, acct1.address, acct1.address, acct1.address, acct1.address
+    ], [
+      parseInt(0x10001, 10), parseInt(0x10002, 10), parseInt(0x10003, 10), parseInt(0x10004, 10), parseInt(0x10005, 10), parseInt(0x10006, 10), parseInt(0x10007, 10)
+    ])).reduce((a, b) => {return parseInt(a, 10) + parseInt(b, 10)})).to.equal(0);
+
+    expect((await f473Contract.balanceOfBatch([
+      acct2.address, acct2.address, acct2.address, acct2.address, acct2.address, acct2.address, acct2.address
+    ], [
+      parseInt(0x10001, 10), parseInt(0x10002, 10), parseInt(0x10003, 10), parseInt(0x10004, 10), parseInt(0x10005, 10), parseInt(0x10006, 10), parseInt(0x10007, 10)
+    ])).reduce((a, b) => {return parseInt(a, 10) + parseInt(b, 10)})).to.equal(NUM_PAIR);
 
     // Verify that the event fired
     expect(eventPresent).to.equal(true);
@@ -530,7 +540,8 @@ describe('F473', function () {
           // Make sure that the transfer event has everything expected of it - from, to, id, value
           expect(event.args.from).to.equal('0x0000000000000000000000000000000000000000');
           expect(event.args.to).to.be.oneOf([acct1.address, acct2.address]);
-          expect(event.args.id.toNumber()).to.equal(parseInt(0x10000, 10));
+          expect(event.args.id.toNumber()).to.be.gte(parseInt(0x10001, 10));
+          expect(event.args.id.toNumber()).to.be.lte(parseInt(0x10007, 10));
           expect(event.args.value).to.equal(1);
 
           // Make sure an event fired
@@ -540,8 +551,17 @@ describe('F473', function () {
     }
 
     // Make sure both accounts have hearts
-    expect(await f473Contract.balanceOf(acct1.address, parseInt(0x10000, 10))).to.equal(NUM_PAIR / 2);
-    expect(await f473Contract.balanceOf(acct2.address, parseInt(0x10000, 10))).to.equal(NUM_PAIR + NUM_PAIR / 2);
+    expect((await f473Contract.balanceOfBatch([
+      acct1.address, acct1.address, acct1.address, acct1.address, acct1.address, acct1.address, acct1.address
+    ], [
+      parseInt(0x10001, 10), parseInt(0x10002, 10), parseInt(0x10003, 10), parseInt(0x10004, 10), parseInt(0x10005, 10), parseInt(0x10006, 10), parseInt(0x10007, 10)
+    ])).reduce((a, b) => {return parseInt(a, 10) + parseInt(b, 10)})).to.equal(NUM_PAIR / 2);
+
+    expect((await f473Contract.balanceOfBatch([
+      acct2.address, acct2.address, acct2.address, acct2.address, acct2.address, acct2.address, acct2.address
+    ], [
+      parseInt(0x10001, 10), parseInt(0x10002, 10), parseInt(0x10003, 10), parseInt(0x10004, 10), parseInt(0x10005, 10), parseInt(0x10006, 10), parseInt(0x10007, 10)
+    ])).reduce((a, b) => {return parseInt(a, 10) + parseInt(b, 10)})).to.equal(NUM_PAIR + NUM_PAIR / 2);
 
     // Verify that the event fired
     expect(eventPresent).to.equal(true);

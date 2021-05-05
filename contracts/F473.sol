@@ -27,7 +27,9 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 
 	// Hearts token
 	uint256 constant HEARTS_ID         = 0x10000;
+	uint256 constant NUM_HEARTS_COLORS = 7;
 	uint256 constant NUM_HEARTS_MINTED = 1;
+	uint256 public   heartsMinted;
 
 	// Winning the game
 	uint256 constant NUM_HEARTS_LEVEL_NINE_COUPLE = 100;
@@ -189,7 +191,7 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 		external
 		onlyOwner
 	{
-		_mint(to, HEARTS_ID, amount, "");
+		_mintHearts(to, amount);
 	}
 
 	function checkAllowedAddress(
@@ -200,6 +202,20 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 		returns (bool)
 	{
 		return allowedAddresses[_address];
+	}
+
+	function _mintHearts(
+		address to,
+		uint256 amount
+	)
+		internal
+	{
+		// Get the current random number & deck size right now
+		// Skip the number of levels * 6 -> 2^6 = 64; Max is 108 bits shifted with 9 levels & indices, +2 for audio + hearts (120 bits shifted)
+		uint256 randomNumber = getRandomNumber(getTimeSlice()) >> ((NUM_LEVELS + TOTAL_CARD_SLOTS + 2 + heartsMinted % 2) * 6);
+		uint256 heartsId = HEARTS_ID + ((randomNumber + heartsMinted) % NUM_HEARTS_COLORS) + 1;
+		heartsMinted += amount;
+		_mint(to, heartsId, amount, "");
 	}
 
 
@@ -300,8 +316,8 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 		_burn(_cardId2Owner, _cardId2, 1);
 
 		// Mint hearts
-		_mint(_cardId1Owner, HEARTS_ID, NUM_HEARTS_MINTED, "");
-		_mint(_cardId2Owner, HEARTS_ID, NUM_HEARTS_MINTED, "");
+		_mintHearts(_cardId1Owner, NUM_HEARTS_MINTED);
+		_mintHearts(_cardId2Owner, NUM_HEARTS_MINTED);
 	}
 
 	function tradeForCoupleCard(
@@ -348,8 +364,23 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 		// Make sure we're at the last level
 		require(getLevel() == 9, "Only during level nine");
 
-		// If allowed, burn
-		_burn(_msgSender(), HEARTS_ID, _amount);
+		// Find any available to burn
+		address from = _msgSender();
+		uint256 amountLeftToBurn = _amount;
+		for (uint256 idx = 0; idx < NUM_HEARTS_COLORS; idx++) {
+			uint256 heartsId = HEARTS_ID + idx + 1;
+			uint256 balance = balanceOf(from, heartsId);
+
+			if (balance > 0 && balance < amountLeftToBurn) {
+				_burn(from, heartsId, balance);
+				amountLeftToBurn -= balance;
+			} else if (balance > 0 && balance >= amountLeftToBurn) {
+				_burn(from, heartsId, amountLeftToBurn);
+				amountLeftToBurn = 0;
+			}
+		}
+
+		require(amountLeftToBurn == 0);
 
 		// Keep track of number burned
 		uint256 timeSlice = getTimeSlice();
