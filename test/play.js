@@ -9,7 +9,7 @@ const {
 } = require('@openzeppelin/test-helpers');
 
 describe('F473', function () {
-  let f473Contract;
+  let f473Contract, f473TokensContract;
   let owner;
   let acct1;
   let acct2;
@@ -44,8 +44,13 @@ describe('F473', function () {
   before(async () => {
     [owner, acct1, acct2, ...accts] = await ethers.getSigners();
 
+    const F473Tokens = await ethers.getContractFactory('F473Tokens');
+    f473TokensContract = await F473Tokens.deploy();
+
     const F473 = await ethers.getContractFactory('F473');
-    f473Contract = await F473.deploy();
+    f473Contract = await F473.deploy(f473TokensContract.address);
+
+    await f473TokensContract.setGameAddress(f473Contract.address);
 
     NUM_SOLO         = (await f473Contract.NUM_SOLO_CHAR()).toNumber();
     NUM_PAIR         = (await f473Contract.NUM_PAIR_CHAR()).toNumber();
@@ -57,7 +62,7 @@ describe('F473', function () {
   });
 
   it('URI should return as expected', async function () {
-    let response = await f473Contract.uri(0);
+    let response = await f473TokensContract.uri(0);
     expect(response).to.equal("https://localhost/{uri}.json");
   });
 
@@ -70,15 +75,15 @@ describe('F473', function () {
   });
 
   it('Should not allow a non-owner to set the URI', async function () {
-    await expectRevert(f473Contract.connect(acct1).setBaseUri("testbreak"), 'Ownable: caller is not the owner');
-    await expectRevert(f473Contract.connect(acct2).setBaseUri("testbreak"), 'Ownable: caller is not the owner');
+    await expectRevert(f473TokensContract.connect(acct1).setBaseUri("testbreak"), 'Ownable: caller is not the owner');
+    await expectRevert(f473TokensContract.connect(acct2).setBaseUri("testbreak"), 'Ownable: caller is not the owner');
   });
 
   it('Should allow owner to set the URI', async function () {
     let newUri = "https://portal.neondistrict.io/f473.json";
-    await f473Contract.setBaseUri(newUri);
+    await f473TokensContract.setBaseUri(newUri);
 
-    let response = await f473Contract.uri(0);
+    let response = await f473TokensContract.uri(0);
     expect(response).to.equal(newUri);
   });
 
@@ -188,10 +193,12 @@ describe('F473', function () {
 
     // Now review the event
     let eventPresent = false;
-    for (const event of receipt.events) {
-      if (event.event === 'TransferSingle') {
+    for (const log of receipt.logs) {
+      let event = f473TokensContract.interface.parseLog(log);
+
+      if (event.name === 'TransferSingle') {
         // Deconstruct the returned card
-        let cardDeconstructed = await f473Contract.deconstructCard(event.args.id.toNumber());
+        let cardDeconstructed = await f473TokensContract.deconstructCard(event.args.id.toNumber());
 
         // Make sure that the transfer event has everything expected of it - from, to, id, value
         expect(event.args.from).to.equal('0x0000000000000000000000000000000000000000');
@@ -289,10 +296,12 @@ describe('F473', function () {
 
         // Now review the event
         let eventPresent = false;
-        for (const event of receipt.events) {
-          if (event.event === 'TransferSingle') {
+        for (const log of receipt.logs) {
+          let event = f473TokensContract.interface.parseLog(log);
+
+          if (event.name === 'TransferSingle') {
             // Deconstruct the returned card
-            let cardDeconstructed = await f473Contract.deconstructCard(event.args.id.toNumber());
+            let cardDeconstructed = await f473TokensContract.deconstructCard(event.args.id.toNumber());
 
             // Make sure that the transfer event has everything expected of it - from, to, id, value
             expect(event.args.from).to.equal('0x0000000000000000000000000000000000000000');
@@ -398,11 +407,13 @@ describe('F473', function () {
 
     // Now review the events
     let eventsPresent = 0;
-    for (const event of receipt.events) {
-      if (event.event === 'TransferSingle') {
+    for (const log of receipt.logs) {
+      let event = f473TokensContract.interface.parseLog(log);
+
+      if (event.name === 'TransferSingle') {
         if (event.args.from === '0x0000000000000000000000000000000000000000') {
           // Deconstruct the returned card
-          let cardDeconstructed = await f473Contract.deconstructCard(event.args.id.toNumber());
+          let cardDeconstructed = await f473TokensContract.deconstructCard(event.args.id.toNumber());
 
           // Make sure that the transfer event has everything expected of it - from, to, id, value
           expect(event.args.from).to.equal('0x0000000000000000000000000000000000000000');
@@ -436,11 +447,11 @@ describe('F473', function () {
       for (let bgIdx = 1; bgIdx <= 1; bgIdx++) {
         for (let audioIdx = NUM_SOLO_AUDIO + 1; audioIdx <= NUM_SOLO_AUDIO + NUM_PAIR_AUDIO; audioIdx++) {
           // Mint multiple times
-          await f473Contract.connect(owner).mintCard(acct1.address, charIdx, bgIdx, audioIdx);
-          await f473Contract.connect(owner).mintCard(acct1.address, charIdx, bgIdx, audioIdx);
+          await f473TokensContract.connect(owner).mintCard(acct1.address, charIdx, bgIdx, audioIdx);
+          await f473TokensContract.connect(owner).mintCard(acct1.address, charIdx, bgIdx, audioIdx);
 
-          await f473Contract.connect(owner).mintCard(acct2.address, charIdx, bgIdx, audioIdx);
-          await f473Contract.connect(owner).mintCard(acct2.address, charIdx, bgIdx, audioIdx);
+          await f473TokensContract.connect(owner).mintCard(acct2.address, charIdx, bgIdx, audioIdx);
+          await f473TokensContract.connect(owner).mintCard(acct2.address, charIdx, bgIdx, audioIdx);
         }
       }
     }
@@ -450,8 +461,8 @@ describe('F473', function () {
     for (let charIdx = NUM_SOLO; charIdx <= NUM_PAIR + NUM_SOLO; charIdx++) {
       for (let bgIdx = 1; bgIdx <= NUM_BACKGROUNDS; bgIdx++) {
         for (let audioIdx = NUM_SOLO_AUDIO + 1; audioIdx <= NUM_SOLO_AUDIO + NUM_PAIR_AUDIO + NUM_COUPLE_AUDIO; audioIdx++) {
-          await f473Contract.connect(owner).mintCard(acct1.address, charIdx, bgIdx, audioIdx);
-          await f473Contract.connect(owner).mintCard(acct2.address, charIdx, bgIdx, audioIdx);
+          await f473TokensContract.connect(owner).mintCard(acct1.address, charIdx, bgIdx, audioIdx);
+          await f473TokensContract.connect(owner).mintCard(acct2.address, charIdx, bgIdx, audioIdx);
         }
       }
     }
@@ -472,14 +483,16 @@ describe('F473', function () {
         id2CharIdx = charIdx;
       }
 
-      let id1 = await f473Contract.constructCardManual(id1CharIdx, 1, 2);
-      let id2 = await f473Contract.constructCardManual(id2CharIdx, 1, 2);
+      let id1 = await f473TokensContract.constructCardManual(id1CharIdx, 1, 2);
+      let id2 = await f473TokensContract.constructCardManual(id2CharIdx, 1, 2);
       let tx = await f473Contract.connect(acct2).tradeForHearts(acct2.address, id1, acct2.address, id2);
       let receipt = await tx.wait();
 
       // Now review the event
-      for (const event of receipt.events) {
-        if (event.event === 'TransferSingle' && event.args.from === '0x0000000000000000000000000000000000000000') {
+      for (const log of receipt.logs) {
+        let event = f473TokensContract.interface.parseLog(log);
+
+        if (event.name === 'TransferSingle' && event.args.from === '0x0000000000000000000000000000000000000000') {
           // Make sure that the transfer event has everything expected of it - from, to, id, value
           expect(event.args.from).to.equal('0x0000000000000000000000000000000000000000');
           expect(event.args.to).to.equal(acct2.address);
@@ -493,36 +506,36 @@ describe('F473', function () {
       }
     }
 
+    // Verify that the event fired
+    expect(eventPresent).to.equal(true);
+
     // Make sure both accounts have hearts
-    expect((await f473Contract.balanceOfBatch([
+    expect((await f473TokensContract.balanceOfBatch([
       acct1.address, acct1.address, acct1.address, acct1.address, acct1.address, acct1.address, acct1.address
     ], [
       parseInt(0x10001, 10), parseInt(0x10002, 10), parseInt(0x10003, 10), parseInt(0x10004, 10), parseInt(0x10005, 10), parseInt(0x10006, 10), parseInt(0x10007, 10)
     ])).reduce((a, b) => {return parseInt(a, 10) + parseInt(b, 10)})).to.equal(0);
 
-    expect((await f473Contract.balanceOfBatch([
+    expect((await f473TokensContract.balanceOfBatch([
       acct2.address, acct2.address, acct2.address, acct2.address, acct2.address, acct2.address, acct2.address
     ], [
       parseInt(0x10001, 10), parseInt(0x10002, 10), parseInt(0x10003, 10), parseInt(0x10004, 10), parseInt(0x10005, 10), parseInt(0x10006, 10), parseInt(0x10007, 10)
     ])).reduce((a, b) => {return parseInt(a, 10) + parseInt(b, 10)})).to.equal(NUM_PAIR);
-
-    // Verify that the event fired
-    expect(eventPresent).to.equal(true);
   });
 
   it('Disallow acct2 to send two of acct1 pairs to get hearts', async function () {
     ethers.provider.send("evm_increaseTime", [60 * 10]);
     ethers.provider.send("evm_mine");
-    let id1 = await f473Contract.constructCardManual(46, 1, 2);
-    let id2 = await f473Contract.constructCardManual(46+1, 1, 2);
+    let id1 = await f473TokensContract.constructCardManual(46, 1, 2);
+    let id2 = await f473TokensContract.constructCardManual(46+1, 1, 2);
     await expectRevert(f473Contract.connect(acct2).tradeForHearts(acct1.address, id1, acct1.address, id2), 'Caller must own at least one card');
   });
 
   it('Disallow acct2 to send two non-matching pairs to get hearts', async function () {
     ethers.provider.send("evm_increaseTime", [60 * 10]);
     ethers.provider.send("evm_mine");
-    let id1 = await f473Contract.constructCardManual(46, 1, 2);
-    let id2 = await f473Contract.constructCardManual(46+2, 1, 2);
+    let id1 = await f473TokensContract.constructCardManual(46, 1, 2);
+    let id2 = await f473TokensContract.constructCardManual(46+2, 1, 2);
     await expectRevert(f473Contract.connect(acct2).tradeForHearts(acct2.address, id1, acct2.address, id2), 'Not a pair');
   });
 
@@ -533,14 +546,16 @@ describe('F473', function () {
       ethers.provider.send("evm_increaseTime", [60 * 10]);
       ethers.provider.send("evm_mine");
 
-      let id1 = await f473Contract.constructCardManual(charIdx, 1, 2);
-      let id2 = await f473Contract.constructCardManual(charIdx+1, 1, 2);
+      let id1 = await f473TokensContract.constructCardManual(charIdx, 1, 2);
+      let id2 = await f473TokensContract.constructCardManual(charIdx+1, 1, 2);
       let tx = await f473Contract.connect(acct2).tradeForHearts(acct2.address, id1, acct1.address, id2);
       let receipt = await tx.wait();
 
       // Now review the event
-      for (const event of receipt.events) {
-        if (event.event === 'TransferSingle' && event.args.from === '0x0000000000000000000000000000000000000000') {
+      for (const log of receipt.logs) {
+        let event = f473TokensContract.interface.parseLog(log);
+
+        if (event.name === 'TransferSingle' && event.args.from === '0x0000000000000000000000000000000000000000') {
           // Make sure that the transfer event has everything expected of it - from, to, id, value
           expect(event.args.from).to.equal('0x0000000000000000000000000000000000000000');
           expect(event.args.to).to.be.oneOf([acct1.address, acct2.address]);
@@ -555,13 +570,13 @@ describe('F473', function () {
     }
 
     // Make sure both accounts have hearts
-    expect((await f473Contract.balanceOfBatch([
+    expect((await f473TokensContract.balanceOfBatch([
       acct1.address, acct1.address, acct1.address, acct1.address, acct1.address, acct1.address, acct1.address
     ], [
       parseInt(0x10001, 10), parseInt(0x10002, 10), parseInt(0x10003, 10), parseInt(0x10004, 10), parseInt(0x10005, 10), parseInt(0x10006, 10), parseInt(0x10007, 10)
     ])).reduce((a, b) => {return parseInt(a, 10) + parseInt(b, 10)})).to.equal(NUM_PAIR / 2);
 
-    expect((await f473Contract.balanceOfBatch([
+    expect((await f473TokensContract.balanceOfBatch([
       acct2.address, acct2.address, acct2.address, acct2.address, acct2.address, acct2.address, acct2.address
     ], [
       parseInt(0x10001, 10), parseInt(0x10002, 10), parseInt(0x10003, 10), parseInt(0x10004, 10), parseInt(0x10005, 10), parseInt(0x10006, 10), parseInt(0x10007, 10)
@@ -597,7 +612,7 @@ describe('F473', function () {
     let randomRoll = (await f473Contract.getRandomNumber(timeSlice)).toString();
 
     // Send hearts
-    await f473Contract.connect(owner).mintHearts(acct1.address, 10);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, f473Contract.heartsRandom(0), 10);
     await f473Contract.connect(acct1).burnHearts(10);
 
     let newRandomRoll = (await f473Contract.getRandomNumber(timeSlice)).toString();
@@ -629,10 +644,12 @@ describe('F473', function () {
 
     // Now review the event
     let eventPresent = false;
-    for (const event of receipt.events) {
-      if (event.event === 'TransferSingle' && event.args.from === '0x0000000000000000000000000000000000000000') {
+    for (const log of receipt.logs) {
+      let event = f473TokensContract.interface.parseLog(log);
+
+      if (event.name === 'TransferSingle' && event.args.from === '0x0000000000000000000000000000000000000000') {
         // Deconstruct the returned card
-        let cardDeconstructed = await f473Contract.deconstructCard(event.args.id.toNumber());
+        let cardDeconstructed = await f473TokensContract.deconstructCard(event.args.id.toNumber());
 
         // Make sure that the transfer event has everything expected of it - from, to, id, value
         expect(event.args.from).to.equal('0x0000000000000000000000000000000000000000');
@@ -666,8 +683,8 @@ describe('F473', function () {
     expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(0);
 
     // Provide the hearts needed from the owner
-    await f473Contract.connect(owner).mintHearts(acct1.address, 100);
-    await f473Contract.connect(owner).mintHearts(acct2.address, 100);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, f473Contract.heartsRandom(0), 100);
+    await f473TokensContract.connect(owner).mintHearts(acct2.address, f473Contract.heartsRandom(0), 100);
 
     // Submit all hearts needed
     await f473Contract.connect(acct1).burnHearts(10);

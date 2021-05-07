@@ -2,11 +2,14 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+//import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "./F473Tokens.sol";
 
-contract F473 is ERC1155, ReentrancyGuard, Ownable
+contract F473 is /*ReentrancyGuard,*/ Ownable
 {
+	// NFT Contract
+	F473Tokens public f473tokensContract;
+
 	// NFTs Config
 	uint256 public constant NUM_SOLO_CHAR    = 45;
 	uint256 public constant NUM_PAIR_CHAR    = 26;
@@ -16,18 +19,9 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 	uint256 public constant NUM_PAIR_AUDIO   = 1;
 	uint256 public constant NUM_COUPLE_AUDIO = 1;
 	uint256 public constant NUM_FINAL_AUDIO  = 1;
+	uint256 public constant NUM_HEARTS_COLORS = 7;
 
-	// Bitmasks for NFT IDs
-	uint256 constant CHARACTER_BITMASK   = 0x00ff;
-	uint256 constant BACKGROUND_BITMASK  = 0x0f00;
-	uint256 constant AUDIO_BITMASK       = 0xf000;
-	//uint256 constant CHARACTER_BITSHIFT  = 0;
-	uint256 constant BACKGROUND_BITSHIFT = 8;
-	uint256 constant AUDIO_BITSHIFT      = 12;
-
-	// Hearts token
-	uint256 constant HEARTS_ID         = 0x10000;
-	uint256 constant NUM_HEARTS_COLORS = 7;
+	// Hearts token Logic
 	uint256 constant NUM_HEARTS_MINTED = 1;
 	uint256 public   heartsMinted;
 
@@ -51,9 +45,6 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 	uint256 public GAME_START;
 	bool public GAME_OVER = false;
 
-	// Addtl Ownership Info
-	//mapping (uint256 => mapping(address => uint256)) _charBalances;
-
 	// Allowlist & Logic
 	mapping (address => bool) allowedAddresses;
 	mapping (address => uint256) addressLastMove;
@@ -66,10 +57,14 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 	 * Management
 	 */
 
-	constructor()
-		ERC1155("https://localhost/{uri}.json")
+	constructor(
+		address payable _f473TokensAddress
+	)
 		Ownable()
 	{
+		// Set the F473 Tokens Contract
+		f473tokensContract = F473Tokens(_f473TokensAddress);
+
 		// Set the game start
 		GAME_START = block.timestamp;
 
@@ -153,15 +148,6 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 		);
 	}
 
-	function setBaseUri(
-		string calldata _uri
-	)
-		external
-		onlyOwner
-	{
-		_setURI(_uri);
-	}
-
 	function setInAllowlist(
 		address _address,
 		bool _setting
@@ -170,28 +156,6 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 		onlyOwner
 	{
 		allowedAddresses[_address] = _setting;
-	}
-
-	function mintCard(
-		address to,
-		uint256 character,
-		uint256 background,
-		uint256 audio
-	)
-		external
-		onlyOwner
-	{
-		_mint(to, constructCardManual(character, background, audio), 1, "");
-	}
-
-	function mintHearts(
-		address to,
-		uint256 amount
-	)
-		external
-		onlyOwner
-	{
-		_mintHearts(to, amount);
 	}
 
 	function checkAllowedAddress(
@@ -204,20 +168,10 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 		return allowedAddresses[_address];
 	}
 
-	function _mintHearts(
-		address to,
-		uint256 amount
-	)
-		internal
-	{
-		heartsMinted += amount;
-		_mint(to, _heartsRandom(0), amount, "");
-	}
-
-	function _heartsRandom(
+	function heartsRandom(
 		uint256 _idxOffset
 	)
-		internal
+		public
 		view
 		returns (uint256)
 	{
@@ -225,7 +179,7 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 		// Skip the number of levels * 6 -> 2^6 = 64; Max is 108 bits shifted with 9 levels & indices, +2 for audio + hearts (120 bits shifted)
 		uint256 timeSlice = getTimeSlice();
 		uint256 randomNumber = getRandomNumber(timeSlice) >> ((NUM_LEVELS + TOTAL_CARD_SLOTS + 2 + heartsMinted % 2 + heartsBurned[timeSlice] % 2) * 6);
-		return HEARTS_ID + ((randomNumber + heartsMinted + heartsBurned[timeSlice] + _idxOffset) % NUM_HEARTS_COLORS) + 1;
+		return ((randomNumber + heartsMinted + heartsBurned[timeSlice] + _idxOffset) % NUM_HEARTS_COLORS) + 1;
 	}
 
 
@@ -242,11 +196,36 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 		// Doesn't do anything else, forces a random roll change, but acts as a turn
 	}
 
+	function mintCardAtIndex(
+		address _to,
+		uint256 _index
+	)
+		internal
+	{
+		uint256 timeSlice = getTimeSlice();
+
+		uint256 character = getCardCharacter(timeSlice, _index);
+		uint256 background = getCardBackground(timeSlice, _index);
+		uint256 audio = getLevelAudio(timeSlice);
+
+		f473tokensContract.mintCard(_to, character, background, audio);
+	}
+
+	function mintHearts(
+		address _to,
+		uint256 _amount
+	)
+		internal
+	{
+		uint256 heartsIndex = heartsRandom(0);
+		heartsMinted += _amount;
+		f473tokensContract.mintHearts(_to, heartsIndex, _amount);
+	}
+
 	function claimSoloCard(
 		uint256 _index
 	)
 		public
-		nonReentrant
 		onlyAllowedAddress
 		gameNotOver
 		oneActionPerAddressPerTimeSlice
@@ -258,7 +237,7 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 		require(getCurrentCardCharacter(_index) <= NUM_SOLO_CHAR, "Can only claim solo cards");
 
 		// If allowed, mint
-		_mint(_msgSender(), constructCard(_index), 1, "");
+		mintCardAtIndex(_msgSender(), _index);
 	}
 
 	function tradeForPairCard(
@@ -267,7 +246,6 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 		uint256 _index
 	)
 		public
-		nonReentrant
 		onlyAllowedAddress
 		gameNotOver
 		oneActionPerAddressPerTimeSlice
@@ -280,18 +258,18 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 		require(selectedCharacter > NUM_SOLO_CHAR && selectedCharacter <= (NUM_SOLO_CHAR + NUM_PAIR_CHAR), "Can only claim pair cards");
 
 		// Check that the input cards are valid
-		(uint256 character1,,) = deconstructCard(_cardId1);
+		(uint256 character1,,) = f473tokensContract.deconstructCard(_cardId1);
 		require(character1 <= NUM_SOLO_CHAR, "Can only trade in solo cards");
 
-		(uint256 character2,,) = deconstructCard(_cardId2);
+		(uint256 character2,,) = f473tokensContract.deconstructCard(_cardId2);
 		require(character2 <= NUM_SOLO_CHAR, "Can only trade in solo cards");
 
-		// Trade in the cards
-		_burn(_msgSender(), _cardId1, 1);
-		_burn(_msgSender(), _cardId2, 1);
+		// Trade in the cards NOTE TO SELF THIS MIGHT BLOW UP IF WE'RE NOT CATCHING REQUIRE FAILURES
+		f473tokensContract.burn(_msgSender(), _cardId1, 1);
+		f473tokensContract.burn(_msgSender(), _cardId2, 1);
 
 		// If allowed, mint
-		_mint(_msgSender(), constructCard(_index), 1, "");
+		mintCardAtIndex(_msgSender(), _index);
 	}
 
 	function tradeForHearts(
@@ -301,7 +279,6 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 		uint256 _cardId2
 	)
 		public
-		nonReentrant
 		onlyAllowedAddress
 		gameNotOver
 		oneActionPerAddressPerTimeSlice
@@ -312,29 +289,28 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 		require(_msgSender() == _cardId1Owner || _msgSender() == _cardId2Owner, "Caller must own at least one card");
 
 		// Check that the input cards are valid
-		(uint256 character1,,) = deconstructCard(_cardId1);
+		(uint256 character1,,) = f473tokensContract.deconstructCard(_cardId1);
 		require(character1 > NUM_SOLO_CHAR && character1 <= NUM_SOLO_CHAR + NUM_PAIR_CHAR, "Can only trade in paired solo cards");
 
-		(uint256 character2,,) = deconstructCard(_cardId2);
+		(uint256 character2,,) = f473tokensContract.deconstructCard(_cardId2);
 		require(character2 > NUM_SOLO_CHAR && character2 <= NUM_SOLO_CHAR + NUM_PAIR_CHAR, "Can only trade in paired solo cards");
 
 		// Require that the input cards are a pair - starts at an even number (46)
 		require(character1 / 2 == character2 / 2, "Not a pair");
 
-		// Trade in the cards
-		_burn(_cardId1Owner, _cardId1, 1);
-		_burn(_cardId2Owner, _cardId2, 1);
+		// Trade in the cards NOTE TO SELF THIS MIGHT BLOW UP IF WE'RE NOT CATCHING REQUIRE FAILURES
+		f473tokensContract.burn(_cardId1Owner, _cardId1, 1);
+		f473tokensContract.burn(_cardId2Owner, _cardId2, 1);
 
 		// Mint hearts
-		_mintHearts(_cardId1Owner, NUM_HEARTS_MINTED);
-		_mintHearts(_cardId2Owner, NUM_HEARTS_MINTED);
+		mintHearts(_cardId1Owner, NUM_HEARTS_MINTED);
+		mintHearts(_cardId2Owner, NUM_HEARTS_MINTED);
 	}
 
 	function tradeForCoupleCard(
 		uint256 _cardId1
 	)
 		public
-		nonReentrant
 		onlyAllowedAddress
 		gameNotOver
 		oneActionPerAddressPerTimeSlice
@@ -349,11 +325,11 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 		uint256 selectedCharacter = getCurrentCardCharacter(0);
 		require(selectedCharacter > NUM_SOLO_CHAR + NUM_PAIR_CHAR && selectedCharacter <= (NUM_SOLO_CHAR + NUM_PAIR_CHAR + NUM_COUPLE_CHAR), "Can only claim couple cards");
 
-		// Trade in the cards
-		_burn(_msgSender(), _cardId1, 1);
+		// Trade in the cards NOTE TO SELF THIS MIGHT BLOW UP IF WE'RE NOT CATCHING REQUIRE FAILURES
+		f473tokensContract.burn(_msgSender(), _cardId1, 1);
 
-		// If allowed, mint
-		_mint(_msgSender(), constructCard(0), 1, "");
+		// Mint card
+		mintCardAtIndex(_msgSender(), 0);
 
 		// Increase decay rate
 		uint256 timeSlice = getTimeSlice();
@@ -364,7 +340,7 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 		uint256 _amount
 	)
 		public
-		nonReentrant
+		/*nonReentrant*/
 		onlyAllowedAddress
 		gameNotOver
 		nextRandomNumber
@@ -378,14 +354,14 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 		address from = _msgSender();
 		uint256 amountLeftToBurn = _amount;
 		for (uint256 idx = 0; idx < NUM_HEARTS_COLORS; idx++) {
-			uint256 heartsId = _heartsRandom(idx);
-			uint256 balance = balanceOf(from, heartsId);
+			uint256 heartsId = heartsRandom(idx);
+			uint256 balance = f473tokensContract.balanceOf(from, f473tokensContract.HEARTS_ID() + heartsId);
 
 			if (balance > 0 && balance < amountLeftToBurn) {
-				_burn(from, heartsId, balance);
+				f473tokensContract.burn(from, f473tokensContract.HEARTS_ID() + heartsId, balance);
 				amountLeftToBurn -= balance;
 			} else if (balance > 0 && balance >= amountLeftToBurn) {
-				_burn(from, heartsId, amountLeftToBurn);
+				f473tokensContract.burn(from, f473tokensContract.HEARTS_ID() + heartsId, amountLeftToBurn);
 				amountLeftToBurn = 0;
 			}
 		}
@@ -397,7 +373,7 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 		heartsBurned[timeSlice] += _amount;
 
 		// Perform a specific action based on current card
-		(uint256 character,,) = deconstructCard(getCurrentCardCharacter(0));
+		(uint256 character,,) = f473tokensContract.deconstructCard(getCurrentCardCharacter(0));
 
 		// Character card is a couple card
 		if (character > NUM_SOLO_CHAR + NUM_PAIR_CHAR) {
@@ -442,7 +418,7 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 		}
 
 		// Perform a specific action based on current card
-		(uint256 character,,) = deconstructCard(getCurrentCardCharacter(0));
+		(uint256 character,,) = f473tokensContract.deconstructCard(getCurrentCardCharacter(0));
 
 		// Character card is a couple card
 		if (character > NUM_SOLO_CHAR + NUM_PAIR_CHAR) {
@@ -717,61 +693,6 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 		return audioIndex + NUM_SOLO_AUDIO + NUM_PAIR_AUDIO + NUM_COUPLE_AUDIO;
 	}
 
-	function constructCard(
-		uint256 _index
-	)
-		public
-		view
-		returns (uint256)
-	{
-		uint256 timeSlice = getTimeSlice();
-
-		uint256 character = getCardCharacter(timeSlice, _index);
-		uint256 background = getCardBackground(timeSlice, _index);
-		uint256 audio = getLevelAudio(timeSlice);
-
-		return constructCardManual(character, background, audio);
-	}
-
-	function constructCardManual(
-		uint256 character,
-		uint256 background,
-		uint256 audio
-	)
-		public
-		view
-		returns (uint256)
-	{
-		require(character >= 1 && character <= NUM_SOLO_CHAR + NUM_PAIR_CHAR + NUM_COUPLE_CHAR);
-		require(background >= 1 && background <= NUM_BACKGROUNDS);
-		require(audio >= 1 && audio <= NUM_SOLO_AUDIO + NUM_PAIR_AUDIO + NUM_COUPLE_AUDIO);
-
-		if (character <= NUM_SOLO_CHAR) {
-			require(audio >= 1 && audio <= NUM_SOLO_AUDIO + NUM_PAIR_AUDIO + NUM_COUPLE_AUDIO);
-		} else if (character <= NUM_SOLO_CHAR + NUM_PAIR_CHAR) {
-			require(audio > NUM_SOLO_AUDIO && audio <= NUM_SOLO_AUDIO + NUM_PAIR_AUDIO + NUM_COUPLE_AUDIO);
-		} else if (character <= NUM_SOLO_CHAR + NUM_PAIR_CHAR + NUM_COUPLE_CHAR) {
-			require(audio > NUM_SOLO_AUDIO + NUM_PAIR_AUDIO && audio <= NUM_SOLO_AUDIO + NUM_PAIR_AUDIO + NUM_COUPLE_AUDIO);
-		}
-
-		return (audio << AUDIO_BITSHIFT) + (background << BACKGROUND_BITSHIFT) + character;
-	}
-
-	function deconstructCard(
-		uint256 _cardId
-	)
-		public
-		pure
-		returns (
-			uint256 character,
-			uint256 background,
-			uint256 audio
-		)
-	{
-		character  = _cardId & CHARACTER_BITMASK;
-		background = (_cardId & BACKGROUND_BITMASK) >> BACKGROUND_BITSHIFT;
-		audio      = (_cardId & AUDIO_BITMASK) >> AUDIO_BITSHIFT;
-	}
 
 	/**
 	 * @dev do not accept value sent directly to contract
