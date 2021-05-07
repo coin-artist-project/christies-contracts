@@ -435,7 +435,11 @@ describe('F473', function () {
     for (let charIdx = NUM_SOLO; charIdx <= NUM_PAIR + NUM_SOLO; charIdx++) {
       for (let bgIdx = 1; bgIdx <= 1; bgIdx++) {
         for (let audioIdx = NUM_SOLO_AUDIO + 1; audioIdx <= NUM_SOLO_AUDIO + NUM_PAIR_AUDIO; audioIdx++) {
+          // Mint multiple times
           await f473Contract.connect(owner).mintCard(acct1.address, charIdx, bgIdx, audioIdx);
+          await f473Contract.connect(owner).mintCard(acct1.address, charIdx, bgIdx, audioIdx);
+
+          await f473Contract.connect(owner).mintCard(acct2.address, charIdx, bgIdx, audioIdx);
           await f473Contract.connect(owner).mintCard(acct2.address, charIdx, bgIdx, audioIdx);
         }
       }
@@ -468,8 +472,8 @@ describe('F473', function () {
         id2CharIdx = charIdx;
       }
 
-      let id1 = await f473Contract.constructCardManual(id1CharIdx, 1, 4);
-      let id2 = await f473Contract.constructCardManual(id2CharIdx, 1, 4);
+      let id1 = await f473Contract.constructCardManual(id1CharIdx, 1, 2);
+      let id2 = await f473Contract.constructCardManual(id2CharIdx, 1, 2);
       let tx = await f473Contract.connect(acct2).tradeForHearts(acct2.address, id1, acct2.address, id2);
       let receipt = await tx.wait();
 
@@ -509,16 +513,16 @@ describe('F473', function () {
   it('Disallow acct2 to send two of acct1 pairs to get hearts', async function () {
     ethers.provider.send("evm_increaseTime", [60 * 10]);
     ethers.provider.send("evm_mine");
-    let id1 = await f473Contract.constructCardManual(46, 1, 6);
-    let id2 = await f473Contract.constructCardManual(46+1, 1, 6);
+    let id1 = await f473Contract.constructCardManual(46, 1, 2);
+    let id2 = await f473Contract.constructCardManual(46+1, 1, 2);
     await expectRevert(f473Contract.connect(acct2).tradeForHearts(acct1.address, id1, acct1.address, id2), 'Caller must own at least one card');
   });
 
   it('Disallow acct2 to send two non-matching pairs to get hearts', async function () {
     ethers.provider.send("evm_increaseTime", [60 * 10]);
     ethers.provider.send("evm_mine");
-    let id1 = await f473Contract.constructCardManual(46, 1, 6);
-    let id2 = await f473Contract.constructCardManual(46+2, 1, 6);
+    let id1 = await f473Contract.constructCardManual(46, 1, 2);
+    let id2 = await f473Contract.constructCardManual(46+2, 1, 2);
     await expectRevert(f473Contract.connect(acct2).tradeForHearts(acct2.address, id1, acct2.address, id2), 'Not a pair');
   });
 
@@ -529,8 +533,8 @@ describe('F473', function () {
       ethers.provider.send("evm_increaseTime", [60 * 10]);
       ethers.provider.send("evm_mine");
 
-      let id1 = await f473Contract.constructCardManual(charIdx, 1, 5);
-      let id2 = await f473Contract.constructCardManual(charIdx+1, 1, 5);
+      let id1 = await f473Contract.constructCardManual(charIdx, 1, 2);
+      let id2 = await f473Contract.constructCardManual(charIdx+1, 1, 2);
       let tx = await f473Contract.connect(acct2).tradeForHearts(acct2.address, id1, acct1.address, id2);
       let receipt = await tx.wait();
 

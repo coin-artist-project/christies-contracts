@@ -9,12 +9,12 @@ contract F473 is ERC1155, ReentrancyGuard, Ownable
 {
 	// NFTs Config
 	uint256 public constant NUM_SOLO_CHAR    = 45;
-	uint256 public constant NUM_PAIR_CHAR    = 22;
-	uint256 public constant NUM_COUPLE_CHAR  = 5;
+	uint256 public constant NUM_PAIR_CHAR    = 26;
+	uint256 public constant NUM_COUPLE_CHAR  = 7;
 	uint256 public constant NUM_BACKGROUNDS  = 9;
-	uint256 public constant NUM_SOLO_AUDIO   = 3;
-	uint256 public constant NUM_PAIR_AUDIO   = 3;
-	uint256 public constant NUM_COUPLE_AUDIO = 3;
+	uint256 public constant NUM_SOLO_AUDIO   = 1;
+	uint256 public constant NUM_PAIR_AUDIO   = 1;
+	uint256 public constant NUM_COUPLE_AUDIO = 1;
 	uint256 public constant NUM_FINAL_AUDIO  = 1;
 
 	// Bitmasks for NFT IDs
