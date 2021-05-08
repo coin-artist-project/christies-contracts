@@ -197,20 +197,6 @@ contract F473 is ReentrancyGuard, Ownable
 		return ((randomNumber + heartsMinted + heartsBurned[timeSlice] + _idxOffset) % NUM_HEARTS_COLORS) + 1;
 	}
 
-
-	/**
-	 * Playing the Game
-	 */
-	function roll()
-		public
-		onlyAllowedAddress
-		oneActionPerAddressPerTimeSlice
-		nextRandomNumber
-		decayHeartsBurned
-	{
-		// Doesn't do anything else, forces a random roll change, but acts as a turn
-	}
-
 	function mintCardAtIndex(
 		address _to,
 		uint256 _index
@@ -235,6 +221,20 @@ contract F473 is ReentrancyGuard, Ownable
 		uint256 heartsIndex = heartsRandom(0);
 		heartsMinted += _amount;
 		f473tokensContract.mintHearts(_to, heartsIndex, _amount);
+	}
+
+
+	/**
+	 * Playing the Game
+	 */
+	function roll()
+		public
+		onlyAllowedAddress
+		oneActionPerAddressPerTimeSlice
+		nextRandomNumber
+		decayHeartsBurned
+	{
+		// Doesn't do anything else, forces a random roll change, but acts as a turn
 	}
 
 	function claimSoloCard(
@@ -420,6 +420,11 @@ contract F473 is ReentrancyGuard, Ownable
 		regionHearts[_region] = _tokenId;
 	}
 
+
+	/**
+	 * Game Information
+	 */
+
 	function getLights()
 		public
 		view
@@ -427,11 +432,6 @@ contract F473 is ReentrancyGuard, Ownable
 	{
 		return regionHearts;
 	}
-
-
-	/**
-	 * Game Information
-	 */
 
 	function getLoveDecayRate()
 		public
@@ -475,6 +475,14 @@ contract F473 is ReentrancyGuard, Ownable
 		return heartsBurned[getTimeSlice()];
 	}
 
+	function getTimeSlice()
+		public
+		view
+		returns (uint256)
+	{
+		return (block.timestamp - GAME_START) / SECONDS_PER_LEVEL;
+	}
+
 	function getRandomNumber(
 		uint256 _timeSlice
 	)
@@ -491,14 +499,6 @@ contract F473 is ReentrancyGuard, Ownable
 		}
 
 		return randomNumbers[_timeSlice];
-	}
-
-	function getTimeSlice()
-		public
-		view
-		returns (uint256)
-	{
-		return (block.timestamp - GAME_START) / SECONDS_PER_LEVEL;
 	}
 
 	function getLevel(
