@@ -36,9 +36,9 @@ describe('F473', function () {
       ethers.provider.send("evm_increaseTime", [60 * 10]);
       ethers.provider.send("evm_mine");
     }
-    while ((await f473Contract.getLevel()).toNumber() !== 9 && sanityLimit++ < 20);
+    while ((await f473Contract.getCurrentLevel()).toNumber() !== 9 && sanityLimit++ < 20);
 
-    expect((await f473Contract.getLevel()).toNumber()).to.equal(9);
+    expect((await f473Contract.getCurrentLevel()).toNumber()).to.equal(9);
   }
 
   before(async () => {
@@ -67,10 +67,10 @@ describe('F473', function () {
   });
 
   it('Should start at level 1, phase 1', async function () {
-    let response = await f473Contract.getLevel();
+    let response = await f473Contract.getCurrentLevel();
     expect(response).to.equal(1);
 
-    response = await f473Contract.getPhase();
+    response = await f473Contract.getCurrentPhase();
     expect(response).to.equal(1);
   });
 
@@ -147,10 +147,10 @@ describe('F473', function () {
 
   it('Should iterate through all levels and phases as expected over a 4 hour period', async function () {
     for (let iter = 0; iter < 24; iter++) {
-      let level = await f473Contract.getLevel();
+      let level = await f473Contract.getCurrentLevel();
       expect(level).to.equal((iter + 1) % 12 > 9 ? 0 : (iter + 1) % 12);
 
-      let phase = await f473Contract.getPhase();
+      let phase = await f473Contract.getCurrentPhase();
       expect(phase).to.equal((iter + 1) % 12 > 9 ? 0 : (Math.floor(iter / 3) + 1) % 4);
 
       let timeSlice = await f473Contract.getTimeSlice();
@@ -168,10 +168,10 @@ describe('F473', function () {
       }
     }
 
-    let level = await f473Contract.getLevel();
+    let level = await f473Contract.getCurrentLevel();
     expect(level).to.equal(1);
 
-    let phase = await f473Contract.getPhase();
+    let phase = await f473Contract.getCurrentPhase();
     expect(phase).to.equal(1);
 
     let timeSlice = await f473Contract.getTimeSlice();
@@ -388,7 +388,7 @@ describe('F473', function () {
     ethers.provider.send("evm_increaseTime", [60 * 10 * 2]); // Increase to Level 3, we'll jump to level 4
     ethers.provider.send("evm_mine");
 
-    let level = await f473Contract.getLevel();
+    let level = await f473Contract.getCurrentLevel();
     expect(level).to.be.equal(3);
 
     // Find a paired card
@@ -602,7 +602,7 @@ describe('F473', function () {
 
 
   // Leaving here
-    //console.log((await f473Contract.getLevel()).toNumber());
+    //console.log((await f473Contract.getCurrentLevel()).toNumber());
     //console.log((await f473Contract.getCurrentCardCharacter(0)).toNumber());
     //console.log((await f473Contract.getLoveMeterFilled()).toNumber());
     //console.log((await f473Contract.getLoveDecayRate()).toNumber());
@@ -615,7 +615,7 @@ describe('F473', function () {
       await forwardToNextLevel9();
     } while ((await f473Contract.getCurrentCardCharacter(0)).toNumber() > NUM_SOLO + NUM_PAIR);
 
-    expect((await f473Contract.getLevel()).toNumber()).to.equal(9);
+    expect((await f473Contract.getCurrentLevel()).toNumber()).to.equal(9);
     expect((await f473Contract.getCurrentCardCharacter(0)).toNumber()).to.be.lte(NUM_SOLO + NUM_PAIR);
     expect((await f473Contract.getLoveDecayRate()).toNumber()).to.equal(1);
     expect((await f473Contract.getLoveMeterSize()).toNumber()).to.equal(10);
@@ -644,7 +644,7 @@ describe('F473', function () {
       await forwardToNextLevel9();
     } while ((await f473Contract.getCurrentCardCharacter(0)).toNumber() <= NUM_SOLO + NUM_PAIR);
 
-    expect((await f473Contract.getLevel()).toNumber()).to.equal(9);
+    expect((await f473Contract.getCurrentLevel()).toNumber()).to.equal(9);
     expect((await f473Contract.getCurrentCardCharacter(0)).toNumber()).to.be.gt(NUM_SOLO + NUM_PAIR);
     expect((await f473Contract.getLoveDecayRate()).toNumber()).to.equal(1);
     expect((await f473Contract.getLoveMeterSize()).toNumber()).to.equal(100);
@@ -690,7 +690,7 @@ describe('F473', function () {
       await forwardToNextLevel9();
     } while ((await f473Contract.getCurrentCardCharacter(0)).toNumber() <= NUM_SOLO + NUM_PAIR);
 
-    expect((await f473Contract.getLevel()).toNumber()).to.equal(9);
+    expect((await f473Contract.getCurrentLevel()).toNumber()).to.equal(9);
     expect((await f473Contract.getCurrentCardCharacter(0)).toNumber()).to.be.gt(NUM_SOLO + NUM_PAIR);
     expect((await f473Contract.getLoveDecayRate()).toNumber()).to.equal(1);
     expect((await f473Contract.getLoveMeterSize()).toNumber()).to.equal(100);
@@ -721,8 +721,8 @@ describe('F473', function () {
     expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(103); // Decay rate does not matter when game is over
 
     // Game over state
-    expect((await f473Contract.getLevel()).toNumber()).to.equal(12);
-    expect((await f473Contract.getPhase()).toNumber()).to.equal(4);
+    expect((await f473Contract.getCurrentLevel()).toNumber()).to.equal(12);
+    expect((await f473Contract.getCurrentPhase()).toNumber()).to.equal(4);
     expect(await f473Contract.GAME_OVER()).to.equal(true);
   });
 
@@ -758,6 +758,51 @@ describe('F473', function () {
     }
 
     expect(acct2Tokens).to.equal(tokenCount);
+  });
+
+  it('Get all lights, should be zero', async function () {
+    let lights = (await f473Contract.getLights());
+
+    for (let light of lights) {
+      expect(light.toNumber()).to.equal(0);
+    }
+  });
+
+  it('Send various hearts, should light them up appropriately', async function () {
+    // Enumerate
+    let tokens = await f473TokensContract.getPaginatedAccountTokens(acct1.address, 0, 100);
+
+    let lastLitRegion = 0, hearts = [
+      ethers.BigNumber.from(0), ethers.BigNumber.from(0), ethers.BigNumber.from(0),
+      ethers.BigNumber.from(0), ethers.BigNumber.from(0), ethers.BigNumber.from(0),
+      ethers.BigNumber.from(0), ethers.BigNumber.from(0), ethers.BigNumber.from(0)
+    ];
+
+    for (let token of tokens.tokenIds) {
+      if ((token.toNumber() & parseInt(0x10000, 10)) > 0) {
+        await f473Contract.connect(acct1).burnHeartLightRegion(lastLitRegion, token);
+        hearts[lastLitRegion++] = token;
+      }
+    }
+
+    let lights = (await f473Contract.getLights());
+
+    for (let idx in lights) {
+      expect(lights[idx].toNumber()).to.equal(hearts[idx].toNumber());
+    }
+
+  });
+
+  it('Should not allow a non-heart token to change the color of the lights', async function () {
+    // Enumerate
+    let tokens = await f473TokensContract.getPaginatedAccountTokens(acct1.address, 0, 100);
+
+    let lastLitRegion = 0, hearts = [];
+    for (let token of tokens.tokenIds) {
+      if ((token.toNumber() & parseInt(0x10000, 10)) === 0) {
+        await expectRevert(f473Contract.connect(acct1).burnHeartLightRegion(0, token), 'Only hearts');
+      }
+    }
   });
 
   it('Double check that every random number is unique', async function () {

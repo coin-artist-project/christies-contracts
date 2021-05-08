@@ -44,6 +44,7 @@ contract F473 is ReentrancyGuard, Ownable
 	// Game State
 	uint256 public GAME_START;
 	bool public GAME_OVER = false;
+	uint256[] public regionHearts;
 
 	// Allowlist & Logic
 	mapping (address => bool) allowedAddresses;
@@ -76,6 +77,9 @@ contract F473 is ReentrancyGuard, Ownable
 		NUM_FINAL_AUDIO   = f473tokensContract.NUM_FINAL_AUDIO();
 		NUM_HEARTS_COLORS = f473tokensContract.NUM_HEARTS_COLORS();
 
+		// Set up the region lights
+		regionHearts = new uint256[](9);
+
 		// Set the game start
 		GAME_START = block.timestamp;
 
@@ -106,7 +110,7 @@ contract F473 is ReentrancyGuard, Ownable
 	}
 
 	modifier validIndex(uint256 _timeSlice, uint256 _index) {
-		require(_index <= TOTAL_CARD_SLOTS - getLevel() && getLevel() > 0 && getLevel() <= 9, "Invalid index");
+		require(_index <= TOTAL_CARD_SLOTS - getLevel(_timeSlice) && getLevel(_timeSlice) > 0 && getLevel(_timeSlice) <= 9, "Invalid index");
 		_;
 	}
 
@@ -125,8 +129,8 @@ contract F473 is ReentrancyGuard, Ownable
 		// Do everything else first
 		_;
 
-		if (!GAME_OVER && getLevel() == 9) {
-			uint256 timeSlice = getTimeSlice();
+		uint256 timeSlice = getTimeSlice();
+		if (!GAME_OVER && getLevel(timeSlice) == 9) {
 			if (heartsBurned[timeSlice] > (loveDecayRate[timeSlice] + 1)) {
 				heartsBurned[timeSlice] -= (loveDecayRate[timeSlice] + 1);
 			} else {
@@ -329,7 +333,8 @@ contract F473 is ReentrancyGuard, Ownable
 		decayHeartsBurned
 	{
 		// Make sure we're at the last level
-		require(getLevel() == 9, "Only during level nine");
+		uint256 timeSlice = getTimeSlice();
+		require(getLevel(timeSlice) == 9, "Only during level nine");
 
 		// Determine whether this card is permissible to be claimed
 		// Look up the token ID based on the index & game state
@@ -343,7 +348,6 @@ contract F473 is ReentrancyGuard, Ownable
 		mintCardAtIndex(_msgSender(), 0);
 
 		// Increase decay rate
-		uint256 timeSlice = getTimeSlice();
 		loveDecayRate[timeSlice] += ++couplesClaimed[timeSlice];
 	}
 
@@ -359,7 +363,8 @@ contract F473 is ReentrancyGuard, Ownable
 		returns (bool)
 	{
 		// Make sure we're at the last level
-		require(getLevel() == 9, "Only during level nine");
+		uint256 timeSlice = getTimeSlice();
+		require(getLevel(timeSlice) == 9, "Only during level nine");
 
 		// Find any available to burn
 		address from = _msgSender();
@@ -380,7 +385,6 @@ contract F473 is ReentrancyGuard, Ownable
 		require(amountLeftToBurn == 0);
 
 		// Keep track of number burned
-		uint256 timeSlice = getTimeSlice();
 		heartsBurned[timeSlice] += _amount;
 
 		// Perform a specific action based on current card
@@ -402,6 +406,28 @@ contract F473 is ReentrancyGuard, Ownable
 		return GAME_OVER;
 	}
 
+	function burnHeartLightRegion(
+		uint256 _region,
+		uint256 _tokenId
+	)
+		public
+		nonReentrant
+		nextRandomNumber
+	{
+		require(_region >= 0 && _region <= 8, "Invalid region");
+		require((f473tokensContract.HEARTS_ID() & _tokenId) > 0, "Only hearts");
+		f473tokensContract.burn(_msgSender(), _tokenId, 1);
+		regionHearts[_region] = _tokenId;
+	}
+
+	function getLights()
+		public
+		view
+		returns (uint256[] memory)
+	{
+		return regionHearts;
+	}
+
 
 	/**
 	 * Game Information
@@ -412,11 +438,12 @@ contract F473 is ReentrancyGuard, Ownable
 		view
 		returns (uint256)
 	{
-		if (getLevel() != 9) {
+		uint256 timeSlice = getTimeSlice();
+		if (getLevel(timeSlice) != 9) {
 			return 0;
 		}
 
-		return loveDecayRate[getTimeSlice()] + 1;
+		return loveDecayRate[timeSlice] + 1;
 	}
 
 	function getLoveMeterSize()
@@ -424,7 +451,8 @@ contract F473 is ReentrancyGuard, Ownable
 		view
 		returns (uint256)
 	{
-		if (getLevel() != 9) {
+		uint256 timeSlice = getTimeSlice();
+		if (getLevel(timeSlice) != 9) {
 			return 0;
 		}
 
@@ -473,7 +501,9 @@ contract F473 is ReentrancyGuard, Ownable
 		return (block.timestamp - GAME_START) / SECONDS_PER_LEVEL;
 	}
 
-	function getLevel()
+	function getLevel(
+		uint256 _timeSlice
+	)
 		public
 		view
 		returns (uint256)
@@ -482,8 +512,7 @@ contract F473 is ReentrancyGuard, Ownable
 			return 12;
 		}
 
-		uint256 timeSlice = getTimeSlice();
-		uint256 level = timeSlice % (NUM_LEVELS + NUM_INTERMISSION_LEVELS) + 1;
+		uint256 level = _timeSlice % (NUM_LEVELS + NUM_INTERMISSION_LEVELS) + 1;
 		if (level > 9) {
 			return 0;
 		}
@@ -491,7 +520,9 @@ contract F473 is ReentrancyGuard, Ownable
 		return level;
 	}
 
-	function getPhase()
+	function getPhase(
+		uint256 _timeSlice
+	)
 		public
 		view
 		returns (uint256)
@@ -500,12 +531,191 @@ contract F473 is ReentrancyGuard, Ownable
 			return 4;
 		}
 
-		uint256 level = getLevel();
+		uint256 level = getLevel(_timeSlice);
 		if (level == 0) {
 			return 0;
 		}
 
 		return (level - 1) / LEVELS_PER_PHASE + 1;
+	}
+
+	function getDeckSize(
+		uint256 _timeSlice
+	)
+		public
+		view
+		returns (uint256)
+	{
+		uint256 phase = getPhase(_timeSlice);
+		uint256 deckSize = NUM_SOLO_CHAR;
+		if (phase > 1) {
+			deckSize += NUM_PAIR_CHAR;
+		}
+		if (phase > 2) {
+			deckSize += NUM_COUPLE_CHAR;
+		}
+		return deckSize;
+	}
+
+	function getAudioSampleSize(
+		uint256 _timeSlice
+	)
+		public
+		view
+		returns (uint256)
+	{
+		uint256 phase = getPhase(_timeSlice);
+
+		if (phase == 1) {
+			return NUM_SOLO_AUDIO;
+		} else if (phase == 2) {
+			return NUM_PAIR_AUDIO;
+		} else if (phase == 3) {
+			return NUM_COUPLE_AUDIO;
+		} else if (phase == 4) {
+			return NUM_FINAL_AUDIO;
+		}
+
+		return 0;
+	}
+
+	function getCardCharacter(
+		uint256 _timeSlice,
+		uint256 _index
+	)
+		public
+		view
+		validTimeSlice(_timeSlice)
+		validIndex(_timeSlice, _index)
+		returns (uint256)
+	{
+		uint256[] memory characters = getCardCharacters(_timeSlice);
+		return characters[_index];
+	}
+
+	function getCardCharacters(
+		uint256 _timeSlice
+	)
+		public
+		view
+		validTimeSlice(_timeSlice)
+		returns (uint256[] memory)
+	{
+		// If the level is invalid, exit
+		if (getLevel(_timeSlice) == 0) {
+			return new uint256[](9);
+		}
+
+		// Get the current random number & deck size right now
+		uint256 lastIndex = NUM_LEVELS - getLevel(_timeSlice);
+		uint256 randomNumber = getRandomNumber(_timeSlice);
+		uint256 deckSize = getDeckSize(_timeSlice);
+
+		// Draw unique cards from the batch
+		uint256[] memory cardIndices = new uint256[](9);
+		uint256 drawnCards;
+		for (uint256 iter; iter <= lastIndex; iter++) {
+			// Get the index
+			uint256 cardIndex = (randomNumber >> (iter * 6)) % deckSize;
+
+			// If already selected, pick the next card, cyclical
+			while ((drawnCards >> cardIndex) % 2 == 1) {
+				cardIndex = (cardIndex + 1) % deckSize;
+			}
+
+			// Mark the drawn card to prevent from being drawn again
+			drawnCards += 2 ** cardIndex;
+
+			// Add to the list of cards drawn
+			// All card draw indexes must be +1 since token ID must start at 1
+			cardIndices[iter] = cardIndex + 1;
+		}
+
+		return cardIndices;
+	}
+
+	function getCardBackgrounds(
+		uint256 _timeSlice
+	)
+		public
+		view
+		validTimeSlice(_timeSlice)
+		returns (uint256[] memory)
+	{
+		// Draw unique cards from the batch
+		uint256 lastIndex = NUM_LEVELS - getLevel(_timeSlice);
+		uint256[] memory cardBackgrounds = new uint256[](9);
+		for (uint256 iter; iter <= lastIndex; iter++) {
+			cardBackgrounds[iter] = getCardBackground(_timeSlice, iter);
+		}
+
+		return cardBackgrounds;
+	}
+
+	function getCardBackground(
+		uint256 _timeSlice,
+		uint256 _index
+	)
+		public
+		view
+		validTimeSlice(_timeSlice)
+		validIndex(_timeSlice, _index)
+		returns (uint256)
+	{
+		// Get the current random number & deck size right now
+		// Skip the number of levels * 6 -> 2^6 = 64; Max is 108 bits shifted with 9 levels & indices
+		uint256 randomNumber = getRandomNumber(_timeSlice) >> ((NUM_LEVELS + _index) * 6);
+		return randomNumber % NUM_BACKGROUNDS + 1;
+	}
+
+	function getLevelAudio(
+		uint256 _timeSlice
+	)
+		public
+		view
+		validTimeSlice(_timeSlice)
+		returns (uint256)
+	{
+		// Get the current random number & deck size right now
+		// Skip the number of levels * 6 -> 2^6 = 64; Max is 108 bits shifted with 9 levels & indices, +1 for audio (114 bits shifted)
+		uint256 randomNumber = getRandomNumber(_timeSlice) >> ((NUM_LEVELS + TOTAL_CARD_SLOTS + 1) * 6);
+		uint256 audioIndex = randomNumber % getAudioSampleSize(_timeSlice) + 1;
+
+		uint256 phase = getPhase(_timeSlice);
+		if (phase == 1) {
+			return audioIndex;
+		} else if (phase == 2) {
+			return audioIndex + NUM_SOLO_AUDIO;
+		} else if (phase == 3) {
+			return audioIndex + NUM_SOLO_AUDIO + NUM_PAIR_AUDIO;
+		}
+
+		return audioIndex + NUM_SOLO_AUDIO + NUM_PAIR_AUDIO + NUM_COUPLE_AUDIO;
+	}
+
+
+	/**
+	 * Current Call Helpers
+	 **/
+
+	function getCurrentLevel()
+		public
+		view
+		returns (uint256)
+	{
+		return getLevel(
+			getTimeSlice()
+		);
+	}
+
+	function getCurrentPhase()
+		public
+		view
+		returns (uint256)
+	{
+		return getPhase(
+			getTimeSlice()
+		);
 	}
 
 	function getCurrentCardCharacter(
@@ -544,164 +754,14 @@ contract F473 is ReentrancyGuard, Ownable
 		);
 	}
 
-	function getDeckSize()
-		public
-		view
-		returns (uint256)
-	{
-		uint256 phase = getPhase();
-		uint256 deckSize = NUM_SOLO_CHAR;
-		if (phase > 1) {
-			deckSize += NUM_PAIR_CHAR;
-		}
-		if (phase > 2) {
-			deckSize += NUM_COUPLE_CHAR;
-		}
-		return deckSize;
-	}
-
-	function getAudioSampleSize(
-		uint256 _timeSlice
-	)
-		public
-		view
-		returns (uint256)
-	{
-		uint256 phase = getPhase();
-
-		if (phase == 1) {
-			return NUM_SOLO_AUDIO;
-		} else if (phase == 2) {
-			return NUM_PAIR_AUDIO;
-		} else if (phase == 3) {
-			return NUM_COUPLE_AUDIO;
-		} else if (phase == 4) {
-			return NUM_FINAL_AUDIO;
-		}
-
-		return 0;
-	}
-
-	function getCardCharacter(
-		uint256 _timeSlice,
-		uint256 _index
-	)
-		public
-		view
-		validTimeSlice(_timeSlice)
-		validIndex(_timeSlice, _index)
-		returns (uint256)
-	{
-		uint256[] memory characters = getCardCharacters(_timeSlice);
-		return characters[_index];
-	}
-
 	function getCurrentCardCharacters()
 		public
 		view
 		returns (uint256[] memory)
 	{
-		return getCardCharacters(getTimeSlice());
-	}
-
-	function getCardCharacters(
-		uint256 _timeSlice
-	)
-		public
-		view
-		validTimeSlice(_timeSlice)
-		returns (uint256[] memory)
-	{
-		// If the level is invalid, exit
-		if (getLevel() == 0) {
-			return new uint256[](9);
-		}
-
-		// Get the current random number & deck size right now
-		uint256 lastIndex = NUM_LEVELS - getLevel();
-		uint256 randomNumber = getRandomNumber(_timeSlice);
-		uint256 deckSize = getDeckSize();
-
-		// Draw unique cards from the batch
-		uint256[] memory cardIndices = new uint256[](9);
-		uint256 drawnCards;
-		for (uint256 iter; iter <= lastIndex; iter++) {
-			// Get the index
-			uint256 cardIndex = (randomNumber >> (iter * 6)) % deckSize;
-
-			// If already selected, pick the next card, cyclical
-			while ((drawnCards >> cardIndex) % 2 == 1) {
-				cardIndex = (cardIndex + 1) % deckSize;
-			}
-
-			// Mark the drawn card to prevent from being drawn again
-			drawnCards += 2 ** cardIndex;
-
-			// Add to the list of cards drawn
-			// All card draw indexes must be +1 since token ID must start at 1
-			cardIndices[iter] = cardIndex + 1;
-		}
-
-		return cardIndices;
-	}
-
-	function getCardBackgrounds(
-		uint256 _timeSlice
-	)
-		public
-		view
-		validTimeSlice(_timeSlice)
-		returns (uint256[] memory)
-	{
-		// Draw unique cards from the batch
-		uint256 lastIndex = NUM_LEVELS - getLevel();
-		uint256[] memory cardBackgrounds = new uint256[](9);
-		for (uint256 iter; iter <= lastIndex; iter++) {
-			cardBackgrounds[iter] = getCardBackground(_timeSlice, iter);
-		}
-
-		return cardBackgrounds;
-	}
-
-	function getCardBackground(
-		uint256 _timeSlice,
-		uint256 _index
-	)
-		public
-		view
-		validTimeSlice(_timeSlice)
-		validIndex(_timeSlice, _index)
-		returns (uint256)
-	{
-		// Get the current random number & deck size right now
-		// Skip the number of levels * 6 -> 2^6 = 64; Max is 108 bits shifted with 9 levels & indices
-		uint256 randomNumber = getRandomNumber(_timeSlice) >> ((NUM_LEVELS + _index) * 6);
-		return randomNumber % NUM_BACKGROUNDS + 1;
-	}
-
-	function getLevelAudio(
-		uint256 _timeSlice
-	)
-		public
-		view
-		validTimeSlice(_timeSlice)
-		returns (uint256)
-	{
-		// Get the current random number & deck size right now
-		// Skip the number of levels * 6 -> 2^6 = 64; Max is 108 bits shifted with 9 levels & indices, +1 for audio (114 bits shifted)
-		uint256 randomNumber = getRandomNumber(_timeSlice) >> ((NUM_LEVELS + TOTAL_CARD_SLOTS + 1) * 6);
-		uint256 audioIndex = randomNumber % getAudioSampleSize(_timeSlice) + 1;
-
-		uint256 phase = getPhase();
-		if (phase == 1) {
-			return audioIndex;
-		} else if (phase == 2) {
-			return audioIndex + NUM_SOLO_AUDIO;
-		} else if (phase == 3) {
-			return audioIndex + NUM_SOLO_AUDIO + NUM_PAIR_AUDIO;
-		}
-
-		return audioIndex + NUM_SOLO_AUDIO + NUM_PAIR_AUDIO + NUM_COUPLE_AUDIO;
+		return getCardCharacters(
+			getTimeSlice()
+		);
 	}
 
 	/**
