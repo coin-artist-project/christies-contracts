@@ -825,6 +825,26 @@ contract F473 is ReentrancyGuard, Ownable
 		);
 	}
 
+	function getCurrentCardBackgrounds()
+		public
+		view
+		returns (uint256[] memory)
+	{
+		return getCardBackgrounds(
+			getTimeSlice()
+		);
+	}
+
+	function getCurrentCardCharacterPositions()
+		public
+		view
+		returns (uint256[] memory)
+	{
+		return getCardCharacterPositions(
+			getTimeSlice()
+		);
+	}
+
 	/**
 	 * Call the token contract
 	 **/
