@@ -2,24 +2,24 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-//import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./F473Tokens.sol";
 
-contract F473 is /*ReentrancyGuard,*/ Ownable
+contract F473 is ReentrancyGuard, Ownable
 {
 	// NFT Contract
 	F473Tokens public f473tokensContract;
 
 	// NFTs Config
-	uint256 public constant NUM_SOLO_CHAR    = 45;
-	uint256 public constant NUM_PAIR_CHAR    = 26;
-	uint256 public constant NUM_COUPLE_CHAR  = 7;
-	uint256 public constant NUM_BACKGROUNDS  = 9;
-	uint256 public constant NUM_SOLO_AUDIO   = 1;
-	uint256 public constant NUM_PAIR_AUDIO   = 1;
-	uint256 public constant NUM_COUPLE_AUDIO = 1;
-	uint256 public constant NUM_FINAL_AUDIO  = 1;
-	uint256 public constant NUM_HEARTS_COLORS = 7;
+	uint256 NUM_SOLO_CHAR;
+	uint256 NUM_PAIR_CHAR;
+	uint256 NUM_COUPLE_CHAR;
+	uint256 NUM_BACKGROUNDS;
+	uint256 NUM_SOLO_AUDIO;
+	uint256 NUM_PAIR_AUDIO;
+	uint256 NUM_COUPLE_AUDIO;
+	uint256 NUM_FINAL_AUDIO;
+	uint256 NUM_HEARTS_COLORS;
 
 	// Hearts token Logic
 	uint256 constant NUM_HEARTS_MINTED = 1;
@@ -64,6 +64,17 @@ contract F473 is /*ReentrancyGuard,*/ Ownable
 	{
 		// Set the F473 Tokens Contract
 		f473tokensContract = F473Tokens(_f473TokensAddress);
+
+		// Get all the config values
+		NUM_SOLO_CHAR     = f473tokensContract.NUM_SOLO_CHAR();
+		NUM_PAIR_CHAR     = f473tokensContract.NUM_PAIR_CHAR();
+		NUM_COUPLE_CHAR   = f473tokensContract.NUM_COUPLE_CHAR();
+		NUM_BACKGROUNDS   = f473tokensContract.NUM_BACKGROUNDS();
+		NUM_SOLO_AUDIO    = f473tokensContract.NUM_SOLO_AUDIO();
+		NUM_PAIR_AUDIO    = f473tokensContract.NUM_PAIR_AUDIO();
+		NUM_COUPLE_AUDIO  = f473tokensContract.NUM_COUPLE_AUDIO();
+		NUM_FINAL_AUDIO   = f473tokensContract.NUM_FINAL_AUDIO();
+		NUM_HEARTS_COLORS = f473tokensContract.NUM_HEARTS_COLORS();
 
 		// Set the game start
 		GAME_START = block.timestamp;
@@ -340,7 +351,7 @@ contract F473 is /*ReentrancyGuard,*/ Ownable
 		uint256 _amount
 	)
 		public
-		/*nonReentrant*/
+		nonReentrant
 		onlyAllowedAddress
 		gameNotOver
 		nextRandomNumber
@@ -692,7 +703,6 @@ contract F473 is /*ReentrancyGuard,*/ Ownable
 
 		return audioIndex + NUM_SOLO_AUDIO + NUM_PAIR_AUDIO + NUM_COUPLE_AUDIO;
 	}
-
 
 	/**
 	 * @dev do not accept value sent directly to contract

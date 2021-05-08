@@ -2,10 +2,10 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "./erc1155/ERC1155Enumerable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract F473Tokens is ERC1155, ReentrancyGuard, Ownable
+contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 {
 	// NFTs Config
 	uint256 public constant NUM_SOLO_CHAR    = 45;
@@ -34,7 +34,6 @@ contract F473Tokens is ERC1155, ReentrancyGuard, Ownable
 	uint256 constant NUM_HEARTS_LEVEL_NINE_COUPLE = 100;
 	uint256 constant NUM_HEARTS_LEVEL_NINE_OTHER = 10;
 	mapping(uint256 => uint256) couplesClaimed;
-	//mapping(uint256 => uint256) heartsBurned;
 	mapping(uint256 => uint256) loveDecayRate;
 
 	// Game
@@ -109,11 +108,6 @@ contract F473Tokens is ERC1155, ReentrancyGuard, Ownable
 
 
 	/**
-	 * Playing the Game
-	 */
-	
-
-	/**
 	 * Game Information
 	 */
 
@@ -123,7 +117,7 @@ contract F473Tokens is ERC1155, ReentrancyGuard, Ownable
 		uint256 audio
 	)
 		public
-		view
+		pure
 		returns (uint256)
 	{
 		require(character >= 1 && character <= NUM_SOLO_CHAR + NUM_PAIR_CHAR + NUM_COUPLE_CHAR);

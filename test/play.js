@@ -52,13 +52,13 @@ describe('F473', function () {
 
     await f473TokensContract.setGameAddress(f473Contract.address);
 
-    NUM_SOLO         = (await f473Contract.NUM_SOLO_CHAR()).toNumber();
-    NUM_PAIR         = (await f473Contract.NUM_PAIR_CHAR()).toNumber();
-    NUM_COUPLE       = (await f473Contract.NUM_COUPLE_CHAR()).toNumber();
-    NUM_SOLO_AUDIO   = (await f473Contract.NUM_SOLO_AUDIO()).toNumber();
-    NUM_PAIR_AUDIO   = (await f473Contract.NUM_PAIR_AUDIO()).toNumber();
-    NUM_COUPLE_AUDIO = (await f473Contract.NUM_COUPLE_AUDIO()).toNumber();
-    NUM_BACKGROUNDS  = (await f473Contract.NUM_BACKGROUNDS()).toNumber();
+    NUM_SOLO         = (await f473TokensContract.NUM_SOLO_CHAR()).toNumber();
+    NUM_PAIR         = (await f473TokensContract.NUM_PAIR_CHAR()).toNumber();
+    NUM_COUPLE       = (await f473TokensContract.NUM_COUPLE_CHAR()).toNumber();
+    NUM_SOLO_AUDIO   = (await f473TokensContract.NUM_SOLO_AUDIO()).toNumber();
+    NUM_PAIR_AUDIO   = (await f473TokensContract.NUM_PAIR_AUDIO()).toNumber();
+    NUM_COUPLE_AUDIO = (await f473TokensContract.NUM_COUPLE_AUDIO()).toNumber();
+    NUM_BACKGROUNDS  = (await f473TokensContract.NUM_BACKGROUNDS()).toNumber();
   });
 
   it('URI should return as expected', async function () {
@@ -79,6 +79,11 @@ describe('F473', function () {
     await expectRevert(f473TokensContract.connect(acct2).setBaseUri("testbreak"), 'Ownable: caller is not the owner');
   });
 
+  it('Should not allow a non-owner to set the Game Address', async function () {
+    await expectRevert(f473TokensContract.connect(acct1).setGameAddress(acct1.address), 'Ownable: caller is not the owner');
+    await expectRevert(f473TokensContract.connect(acct2).setGameAddress(acct1.address), 'Ownable: caller is not the owner');
+  });
+
   it('Should allow owner to set the URI', async function () {
     let newUri = "https://portal.neondistrict.io/f473.json";
     await f473TokensContract.setBaseUri(newUri);
@@ -89,6 +94,15 @@ describe('F473', function () {
 
   it('Should not allow a non-allowed address to perform critical actions', async function () {
     await expectRevert(f473Contract.connect(acct1).claimSoloCard(0), 'Address is not permitted');
+  });
+
+  it('Should not allow a non-owner or non-game address from minting', async function () {
+    await expectRevert(f473TokensContract.connect(acct1).mintCard(acct1.address, 1, 1, 1), 'Game or owner caller only');
+    await expectRevert(f473TokensContract.connect(acct2).mintCard(acct1.address, 1, 1, 1), 'Game or owner caller only');
+    await expectRevert(f473TokensContract.connect(acct1).mintHearts(acct1.address, 1, 1), 'Game or owner caller only');
+    await expectRevert(f473TokensContract.connect(acct2).mintHearts(acct1.address, 1, 1), 'Game or owner caller only');
+    await expectRevert(f473TokensContract.connect(acct1).burn(acct1.address, 1, 1), 'Game or owner caller only');
+    await expectRevert(f473TokensContract.connect(acct2).burn(acct1.address, 1, 1), 'Game or owner caller only');
   });
 
   it('Should allow adding an address to the permitted list, removing, and then adding again', async function () {
