@@ -142,8 +142,8 @@ contract F473 is ReentrancyGuard, Ownable
 	modifier oneActionPerAddressPerTimeSlice() {
 		// Make sure that this address hasn't already moved this time slice
 		uint256 timeSlice = getTimeSlice();
-		require(addressLastMove[_msgSender()] < timeSlice, "Already moved this time frame");
-		addressLastMove[_msgSender()] = timeSlice;
+		require(addressLastMove[_msgSender()] < timeSlice + 1, "Already moved this time frame");
+		addressLastMove[_msgSender()] = timeSlice + 1; // Why +1? Because 0 is the first index.
 		_;
 	}
 

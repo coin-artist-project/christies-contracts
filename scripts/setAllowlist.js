@@ -11,6 +11,7 @@ const CONTRACT_ADDRESS = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512';
 /** CONFIG **/
 //const TO_ADDRESS = '0x9eE5E3Ff06425CF972E77c195F70Ecb18aC23d7f';
 const TO_ADDRESS = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'; // address 0 of hardhat default
+//const TO_ADDRESS = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'; // address 1 of hardhat default
 const TRUE_OR_FALSE = true;
 /** CONFIG **/
 

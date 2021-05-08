@@ -24,6 +24,8 @@ async function main() {
   const F473 = await ethers.getContractFactory('F473');
   const f473Contract = await F473.deploy(f473TokensContract.address);
 
+  await f473TokensContract.setGameAddress(f473Contract.address);
+
   console.log('F473Tokens deployed to:', f473TokensContract.address);
   console.log('F473 deployed to:', f473Contract.address);
 }
