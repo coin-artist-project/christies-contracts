@@ -145,7 +145,7 @@ describe('F473', function () {
     expect(response).to.equal(true);
   });
 
-  it('Should iterate through all levels and phases as expected over a 4 hour period', async function () {
+  it('Should iterate through all levels and phases as expected over a 4 hour period & also get appropriate positions', async function () {
     for (let iter = 0; iter < 24; iter++) {
       let level = await f473Contract.getCurrentLevel();
       expect(level).to.equal((iter + 1) % 12 > 9 ? 0 : (iter + 1) % 12);
@@ -155,6 +155,22 @@ describe('F473', function () {
 
       let timeSlice = await f473Contract.getTimeSlice();
       expect(timeSlice).to.equal(iter);
+
+      let positions = await f473Contract.getCardCharacterPositions(timeSlice);
+      let foundPositions = [];
+
+      //console.log(positions.map((a) => { return a.toNumber()}).join(' | '));
+
+      if (level >= 1 && level <= 9) {
+        for (let idx = 0; idx <= 9 - level; idx++) {
+          expect(foundPositions.indexOf(positions[idx].toNumber()) === -1).to.equal(true);
+          foundPositions.push(positions[idx].toNumber());
+        }
+      } else {
+        for (let idx = 0; idx < 9; idx++) {
+          expect(positions[idx].toNumber()).to.equal(0);
+        }
+      }
 
       //console.log("level:", level, "- phase:", phase, "- time slice:", iter);
 

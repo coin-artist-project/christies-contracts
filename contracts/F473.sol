@@ -83,10 +83,30 @@ contract F473 is ReentrancyGuard, Ownable
 		// Set the game start
 		GAME_START = block.timestamp;
 
-		// Set the first two ranom numbers
+		// Set the first few random numbers
 		randomNumbers[0] = uint256(
 			keccak256(
 				abi.encodePacked(
+					blockhash(block.number - 1),
+					_msgSender()
+				)
+			)
+		);
+
+		randomNumbers[1] = uint256(
+			keccak256(
+				abi.encodePacked(
+					randomNumbers[0],
+					blockhash(block.number - 1),
+					_msgSender()
+				)
+			)
+		);
+
+		randomNumbers[2] = uint256(
+			keccak256(
+				abi.encodePacked(
+					randomNumbers[1],
 					blockhash(block.number - 1),
 					_msgSender()
 				)
@@ -632,6 +652,47 @@ contract F473 is ReentrancyGuard, Ownable
 		}
 
 		return cardIndices;
+	}
+
+	function getCardCharacterPositions(
+		uint256 _timeSlice
+	)
+		public
+		view
+		validTimeSlice(_timeSlice)
+		returns (uint256[] memory)
+	{
+		// If the level is invalid, exit
+		if (getLevel(_timeSlice) == 0) {
+			return new uint256[](9);
+		}
+
+		// Get the current random number & deck size right now
+		uint256 lastIndex = NUM_LEVELS - getLevel(_timeSlice);
+		uint256 randomNumber = getRandomNumber(_timeSlice);
+
+		// Draw unique cards from the batch
+		uint256[] memory cardPositions = new uint256[](9);
+		uint256 setPlacements;
+		for (uint256 iter; iter <= lastIndex; iter++) {
+			// Get the index
+			// Skip the number of levels * 6 -> 2^6 = 64; Max is 108 bits shifted with 9 levels & indices, +2 for audio, +2 hearts (132 bits shifted)
+			// Then we go up to 9 indexes further with 4 bits each, for another 36 to cap at 168 bits
+			uint256 cardPosition = (randomNumber >> ((NUM_LEVELS + TOTAL_CARD_SLOTS + 4) * 6 + iter * 4)) % TOTAL_CARD_SLOTS;
+
+			// If already selected, pick the next card, cyclical
+			while ((setPlacements >> cardPosition) % 2 == 1) {
+				cardPosition = (cardPosition + 1) % TOTAL_CARD_SLOTS;
+			}
+
+			// Mark the drawn card to prevent from being drawn again
+			setPlacements += 2 ** cardPosition;
+
+			// Add to the list of positions
+			cardPositions[iter] = cardPosition;
+		}
+
+		return cardPositions;
 	}
 
 	function getCardBackgrounds(
