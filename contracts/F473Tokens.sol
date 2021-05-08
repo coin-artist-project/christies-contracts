@@ -151,6 +151,37 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 		audio      = (_cardId & AUDIO_BITMASK) >> AUDIO_BITSHIFT;
 	}
 
+	function getPaginatedAccountTokensFormatted(
+		address account,
+		uint256 cursor,
+		uint256 perPage
+	)
+	external
+	view
+	returns (
+		uint256[] memory tokenIds,
+		uint256[] memory character,
+		uint256[] memory background,
+		uint256[] memory audio,
+		uint256[] memory amounts,
+		uint256 nextCursor
+	) {
+		(uint256[] memory tokenIds, uint256[] memory amounts, uint256 nextCursor) = getPaginatedAccountTokens(account, cursor, perPage);
+
+		character = new uint256[](tokenIds.length);
+		background = new uint256[](tokenIds.length);
+		audio = new uint256[](tokenIds.length);
+
+		for (uint256 i; i < tokenIds.length; i++) {
+			(uint256 _character, uint256 _background, uint256 _audio) = deconstructCard(tokenIds[i]);
+			character[i] = _character;
+			background[i] = _background;
+			audio[i] = _audio;
+		}
+
+		return (tokenIds, character, background, audio, amounts, nextCursor);
+	}
+
 	/**
 	 * @dev do not accept value sent directly to contract
 	 */

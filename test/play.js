@@ -805,6 +805,17 @@ describe('F473', function () {
     }
   });
 
+  it('Should not allow a non-heart token to change the color of the lights', async function () {
+    // Enumerate
+    let tokens = await f473TokensContract.getPaginatedAccountTokensFormatted(acct1.address, 0, 100);
+
+    expect(tokens.tokenIds.length).to.be.gt(0);
+    expect(tokens.character.length).to.equal(tokens.tokenIds.length);
+    expect(tokens.background.length).to.equal(tokens.tokenIds.length);
+    expect(tokens.audio.length).to.equal(tokens.tokenIds.length);
+    expect(tokens.amounts.length).to.equal(tokens.tokenIds.length);
+  });
+
   it('Double check that every random number is unique', async function () {
     let timeSlice = (await f473Contract.getTimeSlice()).toNumber();
     let lastTsRandomNumber;

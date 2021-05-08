@@ -8,10 +8,6 @@ const { ethers } = require('hardhat');
 
 const CONTRACT_ADDRESS = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512';
 
-/** CONFIG **/
-const FROM_ADDRESS = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'; // address 0 of hardhat default
-/** CONFIG **/
-
 async function main() {
   // Check the address of the sender
   const [deployer] = await ethers.getSigners();

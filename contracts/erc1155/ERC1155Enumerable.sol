@@ -77,7 +77,7 @@ abstract contract ERC1155Enumerable is ERC1155 {
         uint256 cursor,
         uint256 perPage
     )
-        external
+        public
         view
         returns (
             uint256[] memory tokenIds,
