@@ -69,13 +69,21 @@ abstract contract ERC1155Enumerable is ERC1155 {
      * @param perPage How many we want per page
      *
      * @return tokenIds the token Ids
+     * @return amounts the token balances
      * @return nextCursor next cursor to use
      */
     function getPaginatedAccountTokens(
         address account,
         uint256 cursor,
         uint256 perPage
-    ) external view returns (uint256[] memory tokenIds, uint256 nextCursor) {
+    )
+        external
+        view
+        returns (
+            uint256[] memory tokenIds,
+            uint256[] memory amounts,
+            uint256 nextCursor
+    ) {
         uint256 itemsCount = _accountTokens[account].length();
         uint256 length = perPage;
         if (length > itemsCount - cursor) {
@@ -83,11 +91,13 @@ abstract contract ERC1155Enumerable is ERC1155 {
         }
 
         tokenIds = new uint256[](length);
+        amounts = new uint256[](length);
         for (uint256 i; i < length; i++) {
             tokenIds[i] = _accountTokens[account].at(cursor + i);
+            amounts[i] = balanceOf(account, tokenIds[i]);
         }
 
-        return (tokenIds, cursor + length);
+        return (tokenIds, amounts, cursor + length);
     }
 
     function _mint(

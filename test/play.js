@@ -727,6 +727,39 @@ describe('F473', function () {
   });
 
 
+  it('Enumerate both accounts tokens', async function () {
+    let acct1Tokens = (await f473TokensContract.getAccountTokensCount(acct1.address)).toNumber();
+    let acct2Tokens = (await f473TokensContract.getAccountTokensCount(acct2.address)).toNumber();
+
+    expect(acct1Tokens).to.be.gte(1);
+    expect(acct2Tokens).to.be.gte(1);
+
+    let acct1TokenAtIndex = (await f473TokensContract.getAccountTokensByIndex(acct1.address, 0)).toNumber();
+    let acct2TokenAtIndex = (await f473TokensContract.getAccountTokensByIndex(acct2.address, 0)).toNumber();
+
+    expect(acct1TokenAtIndex).to.be.gte(1);
+    expect(acct2TokenAtIndex).to.be.gte(1);
+
+    // Enumerate
+    let pageSize = 100, tokenCount = 0;
+    for (let cursor = 0; cursor < acct1Tokens; cursor += pageSize) {
+      let tokens = await f473TokensContract.getPaginatedAccountTokens(acct1.address, cursor, pageSize);
+      tokenCount += tokens.tokenIds.length;
+      expect(tokens.tokenIds.length).to.equal(tokens.amounts.length);
+    }
+
+    expect(acct1Tokens).to.equal(tokenCount);
+
+    tokenCount = 0;
+    for (let cursor = 0; cursor < acct2Tokens; cursor += pageSize) {
+      let tokens = await f473TokensContract.getPaginatedAccountTokens(acct2.address, cursor, pageSize);
+      tokenCount += tokens.tokenIds.length;
+      expect(tokens.tokenIds.length).to.equal(tokens.amounts.length);
+    }
+
+    expect(acct2Tokens).to.equal(tokenCount);
+  });
+
   it('Double check that every random number is unique', async function () {
     let timeSlice = (await f473Contract.getTimeSlice()).toNumber();
     let lastTsRandomNumber;

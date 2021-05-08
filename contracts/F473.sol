@@ -705,6 +705,23 @@ contract F473 is ReentrancyGuard, Ownable
 	}
 
 	/**
+	 * Call the token contract
+	 **/
+	function deconstructCard(
+		uint256 _cardId
+	)
+		public
+		view
+		returns (
+			uint256 character,
+			uint256 background,
+			uint256 audio
+		)
+	{
+		return f473tokensContract.deconstructCard(_cardId);
+	}
+
+	/**
 	 * @dev do not accept value sent directly to contract
 	 */
 	receive()
