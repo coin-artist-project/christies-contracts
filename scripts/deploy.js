@@ -17,12 +17,14 @@ async function main() {
 
   console.log("Account balance:", (await deployer.getBalance()).toString());
 
-  // We get the contract to deploy
-  const F473 = await ethers.getContractFactory('F473');
+  // Deploy F473 contracts
+  const F473Tokens = await ethers.getContractFactory('F473Tokens');
+  const f473TokensContract = await F473Tokens.deploy();
 
-  // Deploy F473, this will set caller as the Owner
-  const f473Contract = await F473.deploy();
-  await f473Contract.deployed();
+  const F473 = await ethers.getContractFactory('F473');
+  const f473Contract = await F473.deploy(f473TokensContract.address);
+
+  console.log('F473Tokens deployed to:', f473TokensContract.address);
   console.log('F473 deployed to:', f473Contract.address);
 }
 
