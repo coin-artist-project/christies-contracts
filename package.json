@@ -30,6 +30,7 @@
 	"dependencies": {
 		"@openzeppelin/contracts": "^4.0.0",
 		"@openzeppelin/test-helpers": "^0.5.10",
-		"dotenv": "^8.2.0"
+		"dotenv": "^8.2.0",
+		"erc1155extensions": "git+https://github.com/dievardump/ERC1155Extensions.git"
 	}
 }

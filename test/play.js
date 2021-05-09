@@ -759,7 +759,7 @@ describe('F473', function () {
     // Enumerate
     let pageSize = 100, tokenCount = 0;
     for (let cursor = 0; cursor < acct1Tokens; cursor += pageSize) {
-      let tokens = await f473TokensContract.getPaginatedAccountTokens(acct1.address, cursor, pageSize);
+      let tokens = await f473TokensContract.getAccountTokensPaginated(acct1.address, cursor, pageSize);
       tokenCount += tokens.tokenIds.length;
       expect(tokens.tokenIds.length).to.equal(tokens.amounts.length);
     }
@@ -768,7 +768,7 @@ describe('F473', function () {
 
     tokenCount = 0;
     for (let cursor = 0; cursor < acct2Tokens; cursor += pageSize) {
-      let tokens = await f473TokensContract.getPaginatedAccountTokens(acct2.address, cursor, pageSize);
+      let tokens = await f473TokensContract.getAccountTokensPaginated(acct2.address, cursor, pageSize);
       tokenCount += tokens.tokenIds.length;
       expect(tokens.tokenIds.length).to.equal(tokens.amounts.length);
     }
@@ -786,7 +786,7 @@ describe('F473', function () {
 
   it('Send various hearts, should light them up appropriately', async function () {
     // Enumerate
-    let tokens = await f473TokensContract.getPaginatedAccountTokens(acct1.address, 0, 100);
+    let tokens = await f473TokensContract.getAccountTokensPaginated(acct1.address, 0, 100);
 
     let lastLitRegion = 0, hearts = [
       ethers.BigNumber.from(0), ethers.BigNumber.from(0), ethers.BigNumber.from(0),
@@ -811,7 +811,7 @@ describe('F473', function () {
 
   it('Should not allow a non-heart token to change the color of the lights', async function () {
     // Enumerate
-    let tokens = await f473TokensContract.getPaginatedAccountTokens(acct1.address, 0, 100);
+    let tokens = await f473TokensContract.getAccountTokensPaginated(acct1.address, 0, 100);
 
     let lastLitRegion = 0, hearts = [];
     for (let token of tokens.tokenIds) {
@@ -823,7 +823,7 @@ describe('F473', function () {
 
   it('Should not allow a non-heart token to change the color of the lights', async function () {
     // Enumerate
-    let tokens = await f473TokensContract.getPaginatedAccountTokensFormatted(acct1.address, 0, 100);
+    let tokens = await f473TokensContract.getAccountTokensFormatted(acct1.address, 0, 100);
 
     expect(tokens.tokenIds.length).to.be.gt(0);
     expect(tokens.character.length).to.equal(tokens.tokenIds.length);

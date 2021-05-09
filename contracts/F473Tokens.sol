@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./erc1155/ERC1155Enumerable.sol";
+import "erc1155extensions/contracts/ERC1155Enumerable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
@@ -151,7 +151,7 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 		audio      = (_cardId & AUDIO_BITMASK) >> AUDIO_BITSHIFT;
 	}
 
-	function getPaginatedAccountTokensFormatted(
+	function getAccountTokensFormatted(
 		address account,
 		uint256 cursor,
 		uint256 perPage
@@ -166,7 +166,7 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 		uint256[] memory amounts,
 		uint256 nextCursor
 	) {
-		(uint256[] memory tokenIds, uint256[] memory amounts, uint256 nextCursor) = getPaginatedAccountTokens(account, cursor, perPage);
+		(uint256[] memory tokenIds, uint256[] memory amounts, uint256 nextCursor) = getAccountTokensPaginated(account, cursor, perPage);
 
 		character = new uint256[](tokenIds.length);
 		background = new uint256[](tokenIds.length);
