@@ -9,8 +9,11 @@ const { ethers } = require('hardhat');
 const CONTRACT_ADDRESS = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512';
 
 /** CONFIG **/
-//const TO_ADDRESS = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'; // address 0 of hardhat default
-const TO_ADDRESS = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'; // address 1 of hardhat default
+const TO_ADDRESSES = [
+  '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266',
+  '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+  '0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc'
+];
 const TRUE_OR_FALSE = true;
 /** CONFIG **/
 
@@ -24,9 +27,13 @@ async function main() {
 
   const provider = await ethers.getDefaultProvider();
 
-  let tx = await contract.setInAllowlist(TO_ADDRESS, TRUE_OR_FALSE);
-  let receipt = await tx.wait();
-  console.log(receipt);
+  for (let addr of TO_ADDRESSES) {
+    let tx = await contract.setInAllowlist(addr, TRUE_OR_FALSE);
+    let receipt = await tx.wait();
+    console.log(receipt);
+  }
+
+  console.log("done.");
 }
 
 main()

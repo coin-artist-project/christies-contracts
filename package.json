@@ -9,6 +9,7 @@
 		"deploy": "hardhat run ./scripts/deploy.js",
 		"rollGotoNextLevel": "hardhat run ./scripts/rollGotoNextLevel.js",
 		"setAllowlist": "hardhat run ./scripts/setAllowlist.js",
+		"setAllowlistDev": "hardhat run ./scripts/setAllowlistDev.js",
 		"test": "hardhat test --network hardhat"
 	},
 	"author": "",
