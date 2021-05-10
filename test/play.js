@@ -97,8 +97,8 @@ describe('F473', function () {
   });
 
   it('Should not allow a non-owner or non-game address from minting', async function () {
-    await expectRevert(f473TokensContract.connect(acct1).mintCard(acct1.address, 1, 1, 1), 'Game or owner caller only');
-    await expectRevert(f473TokensContract.connect(acct2).mintCard(acct1.address, 1, 1, 1), 'Game or owner caller only');
+    await expectRevert(f473TokensContract.connect(acct1).mintCard(acct1.address, 1, 1, 1, 1), 'Game or owner caller only');
+    await expectRevert(f473TokensContract.connect(acct2).mintCard(acct1.address, 1, 1, 1, 1), 'Game or owner caller only');
     await expectRevert(f473TokensContract.connect(acct1).mintHearts(acct1.address, 1, 1), 'Game or owner caller only');
     await expectRevert(f473TokensContract.connect(acct2).mintHearts(acct1.address, 1, 1), 'Game or owner caller only');
     await expectRevert(f473TokensContract.connect(acct1).burn(acct1.address, 1, 1), 'Game or owner caller only');
@@ -477,11 +477,11 @@ describe('F473', function () {
       for (let bgIdx = 1; bgIdx <= 1; bgIdx++) {
         for (let audioIdx = NUM_SOLO_AUDIO + 1; audioIdx <= NUM_SOLO_AUDIO + NUM_PAIR_AUDIO; audioIdx++) {
           // Mint multiple times
-          await f473TokensContract.connect(owner).mintCard(acct1.address, charIdx, bgIdx, audioIdx);
-          await f473TokensContract.connect(owner).mintCard(acct1.address, charIdx, bgIdx, audioIdx);
+          await f473TokensContract.connect(owner).mintCard(acct1.address, charIdx, bgIdx, audioIdx, 1);
+          await f473TokensContract.connect(owner).mintCard(acct1.address, charIdx, bgIdx, audioIdx, 1);
 
-          await f473TokensContract.connect(owner).mintCard(acct2.address, charIdx, bgIdx, audioIdx);
-          await f473TokensContract.connect(owner).mintCard(acct2.address, charIdx, bgIdx, audioIdx);
+          await f473TokensContract.connect(owner).mintCard(acct2.address, charIdx, bgIdx, audioIdx, 1);
+          await f473TokensContract.connect(owner).mintCard(acct2.address, charIdx, bgIdx, audioIdx, 1);
         }
       }
     }
@@ -491,8 +491,8 @@ describe('F473', function () {
     for (let charIdx = NUM_SOLO; charIdx <= NUM_PAIR + NUM_SOLO; charIdx++) {
       for (let bgIdx = 1; bgIdx <= NUM_BACKGROUNDS; bgIdx++) {
         for (let audioIdx = NUM_SOLO_AUDIO + 1; audioIdx <= NUM_SOLO_AUDIO + NUM_PAIR_AUDIO + NUM_COUPLE_AUDIO; audioIdx++) {
-          await f473TokensContract.connect(owner).mintCard(acct1.address, charIdx, bgIdx, audioIdx);
-          await f473TokensContract.connect(owner).mintCard(acct2.address, charIdx, bgIdx, audioIdx);
+          await f473TokensContract.connect(owner).mintCard(acct1.address, charIdx, bgIdx, audioIdx, 1);
+          await f473TokensContract.connect(owner).mintCard(acct2.address, charIdx, bgIdx, audioIdx, 1);
         }
       }
     }
@@ -513,8 +513,8 @@ describe('F473', function () {
         id2CharIdx = charIdx;
       }
 
-      let id1 = await f473TokensContract.constructCardManual(id1CharIdx, 1, 2);
-      let id2 = await f473TokensContract.constructCardManual(id2CharIdx, 1, 2);
+      let id1 = await f473TokensContract.constructCardManual(id1CharIdx, 1, 2, 1);
+      let id2 = await f473TokensContract.constructCardManual(id2CharIdx, 1, 2, 1);
       let tx = await f473Contract.connect(acct2).tradeForHearts(acct2.address, id1, acct2.address, id2);
       let receipt = await tx.wait();
 
@@ -556,16 +556,16 @@ describe('F473', function () {
   it('Disallow acct2 to send two of acct1 pairs to get hearts', async function () {
     ethers.provider.send("evm_increaseTime", [60 * 10]);
     ethers.provider.send("evm_mine");
-    let id1 = await f473TokensContract.constructCardManual(46, 1, 2);
-    let id2 = await f473TokensContract.constructCardManual(46+1, 1, 2);
+    let id1 = await f473TokensContract.constructCardManual(46, 1, 2, 1);
+    let id2 = await f473TokensContract.constructCardManual(46+1, 1, 2, 1);
     await expectRevert(f473Contract.connect(acct2).tradeForHearts(acct1.address, id1, acct1.address, id2), 'Caller must own at least one card');
   });
 
   it('Disallow acct2 to send two non-matching pairs to get hearts', async function () {
     ethers.provider.send("evm_increaseTime", [60 * 10]);
     ethers.provider.send("evm_mine");
-    let id1 = await f473TokensContract.constructCardManual(46, 1, 2);
-    let id2 = await f473TokensContract.constructCardManual(46+2, 1, 2);
+    let id1 = await f473TokensContract.constructCardManual(46, 1, 2, 1);
+    let id2 = await f473TokensContract.constructCardManual(46+2, 1, 2, 1);
     await expectRevert(f473Contract.connect(acct2).tradeForHearts(acct2.address, id1, acct2.address, id2), 'Not a pair');
   });
 
@@ -576,8 +576,8 @@ describe('F473', function () {
       ethers.provider.send("evm_increaseTime", [60 * 10]);
       ethers.provider.send("evm_mine");
 
-      let id1 = await f473TokensContract.constructCardManual(charIdx, 1, 2);
-      let id2 = await f473TokensContract.constructCardManual(charIdx+1, 1, 2);
+      let id1 = await f473TokensContract.constructCardManual(charIdx, 1, 2, 1);
+      let id2 = await f473TokensContract.constructCardManual(charIdx+1, 1, 2, 1);
       let tx = await f473Contract.connect(acct2).tradeForHearts(acct2.address, id1, acct1.address, id2);
       let receipt = await tx.wait();
 
@@ -829,6 +829,7 @@ describe('F473', function () {
     expect(tokens.character.length).to.equal(tokens.tokenIds.length);
     expect(tokens.background.length).to.equal(tokens.tokenIds.length);
     expect(tokens.audio.length).to.equal(tokens.tokenIds.length);
+    expect(tokens.version.length).to.equal(tokens.tokenIds.length);
     expect(tokens.amounts.length).to.equal(tokens.tokenIds.length);
   });
 

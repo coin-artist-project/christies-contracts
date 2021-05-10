@@ -18,12 +18,15 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 	uint256 public constant NUM_FINAL_AUDIO  = 1;
 
 	// Bitmasks for NFT IDs
-	uint256 constant CHARACTER_BITMASK   = 0x00ff;
-	uint256 constant BACKGROUND_BITMASK  = 0x0f00;
-	uint256 constant AUDIO_BITMASK       = 0xf000;
+	uint256 constant CHARACTER_BITMASK   = 0x0000ff;
+	uint256 constant BACKGROUND_BITMASK  = 0x000f00;
+	uint256 constant AUDIO_BITMASK       = 0x00f000;
+	//uint256 constant HEARTS_BITMASK    = 0x0f0000;
+	uint256 constant VERSION_BITMASK     = 0xf00000;
 	//uint256 constant CHARACTER_BITSHIFT  = 0;
 	uint256 constant BACKGROUND_BITSHIFT = 8;
 	uint256 constant AUDIO_BITSHIFT      = 12;
+	uint256 constant VERSION_BITSHIFT    = 20;
 
 	// Hearts token
 	uint256 public constant HEARTS_ID         = 0x10000;
@@ -75,12 +78,13 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 		address to,
 		uint256 character,
 		uint256 background,
-		uint256 audio
+		uint256 audio,
+		uint256 version
 	)
 		external
 		onlyGameOrOwner
 	{
-		_mint(to, constructCardManual(character, background, audio), 1, "");
+		_mint(to, constructCardManual(character, background, audio, version), 1, "");
 	}
 
 	function mintHearts(
@@ -114,7 +118,8 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 	function constructCardManual(
 		uint256 character,
 		uint256 background,
-		uint256 audio
+		uint256 audio,
+		uint256 version
 	)
 		public
 		pure
@@ -132,7 +137,7 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 			require(audio > NUM_SOLO_AUDIO + NUM_PAIR_AUDIO && audio <= NUM_SOLO_AUDIO + NUM_PAIR_AUDIO + NUM_COUPLE_AUDIO);
 		}
 
-		return (audio << AUDIO_BITSHIFT) + (background << BACKGROUND_BITSHIFT) + character;
+		return (version << VERSION_BITSHIFT) + (audio << AUDIO_BITSHIFT) + (background << BACKGROUND_BITSHIFT) + character;
 	}
 
 	function deconstructCard(
@@ -143,12 +148,14 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 		returns (
 			uint256 character,
 			uint256 background,
-			uint256 audio
+			uint256 audio,
+			uint256 version
 		)
 	{
 		character  = _cardId & CHARACTER_BITMASK;
 		background = (_cardId & BACKGROUND_BITMASK) >> BACKGROUND_BITSHIFT;
 		audio      = (_cardId & AUDIO_BITMASK) >> AUDIO_BITSHIFT;
+		version    = (_cardId & VERSION_BITMASK) >> VERSION_BITSHIFT;
 	}
 
 	function getAccountTokensFormatted(
@@ -163,23 +170,26 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 		uint256[] memory character,
 		uint256[] memory background,
 		uint256[] memory audio,
+		uint256[] memory version,
 		uint256[] memory amounts,
 		uint256 nextCursor
 	) {
 		(uint256[] memory tokenIds, uint256[] memory amounts, uint256 nextCursor) = getAccountTokensPaginated(account, cursor, perPage);
 
+		version = new uint256[](tokenIds.length);
 		character = new uint256[](tokenIds.length);
 		background = new uint256[](tokenIds.length);
 		audio = new uint256[](tokenIds.length);
 
 		for (uint256 i; i < tokenIds.length; i++) {
-			(uint256 _character, uint256 _background, uint256 _audio) = deconstructCard(tokenIds[i]);
+			(uint256 _character, uint256 _background, uint256 _audio, uint256 _version) = deconstructCard(tokenIds[i]);
+			version[i] = _version;
 			character[i] = _character;
 			background[i] = _background;
 			audio[i] = _audio;
 		}
 
-		return (tokenIds, character, background, audio, amounts, nextCursor);
+		return (tokenIds, character, background, audio, version, amounts, nextCursor);
 	}
 
 	/**

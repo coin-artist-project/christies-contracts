@@ -43,12 +43,14 @@ contract F473 is ReentrancyGuard, Ownable
 
 	// Game State
 	uint256 public GAME_START;
-	bool public GAME_OVER = false;
+	bool public GAME_OVER;
+	uint256 public GAME_VERSION;
 	uint256[] public regionHearts;
 
 	// Allowlist & Logic
 	mapping (address => bool) allowedAddresses;
 	mapping (address => uint256) addressLastMove;
+	bool public REQUIRE_ALLOWLIST = true; // Default is locked
 
 	// RNG
 	mapping (uint256 => uint256) public randomNumbers;
@@ -66,6 +68,9 @@ contract F473 is ReentrancyGuard, Ownable
 		// Set the F473 Tokens Contract
 		f473tokensContract = F473Tokens(_f473TokensAddress);
 
+		// Increase the game version, starts at 1
+		GAME_VERSION++;
+
 		// Get all the config values
 		NUM_SOLO_CHAR     = f473tokensContract.NUM_SOLO_CHAR();
 		NUM_PAIR_CHAR     = f473tokensContract.NUM_PAIR_CHAR();
@@ -82,9 +87,10 @@ contract F473 is ReentrancyGuard, Ownable
 
 		// Set the game start
 		GAME_START = block.timestamp;
+		GAME_OVER = false;
 
 		// Set the first few random numbers
-		randomNumbers[0] = uint256(
+		randomNumbers[lastRandomTimeSlice] = uint256(
 			keccak256(
 				abi.encodePacked(
 					blockhash(block.number - 1),
@@ -93,7 +99,7 @@ contract F473 is ReentrancyGuard, Ownable
 			)
 		);
 
-		randomNumbers[1] = uint256(
+		randomNumbers[lastRandomTimeSlice + 1] = uint256(
 			keccak256(
 				abi.encodePacked(
 					randomNumbers[0],
@@ -103,7 +109,7 @@ contract F473 is ReentrancyGuard, Ownable
 			)
 		);
 
-		randomNumbers[2] = uint256(
+		randomNumbers[lastRandomTimeSlice + 2] = uint256(
 			keccak256(
 				abi.encodePacked(
 					randomNumbers[1],
@@ -115,7 +121,7 @@ contract F473 is ReentrancyGuard, Ownable
 	}
 
 	modifier onlyAllowedAddress() {
-		require(allowedAddresses[_msgSender()] == true, "Address is not permitted");
+		require(!REQUIRE_ALLOWLIST || allowedAddresses[_msgSender()] == true, "Address is not permitted");
 		_;
 	}
 
@@ -203,6 +209,15 @@ contract F473 is ReentrancyGuard, Ownable
 		return allowedAddresses[_address];
 	}
 
+	function toggleAllowlist(
+		bool _trueOrFalse
+	)
+		external
+		onlyOwner
+	{
+		REQUIRE_ALLOWLIST = _trueOrFalse;
+	}
+
 	function heartsRandom(
 		uint256 _idxOffset
 	)
@@ -229,7 +244,7 @@ contract F473 is ReentrancyGuard, Ownable
 		uint256 background = getCardBackground(timeSlice, _index);
 		uint256 audio = getLevelAudio(timeSlice);
 
-		f473tokensContract.mintCard(_to, character, background, audio);
+		f473tokensContract.mintCard(_to, character, background, audio, GAME_VERSION);
 	}
 
 	function mintHearts(
@@ -293,10 +308,10 @@ contract F473 is ReentrancyGuard, Ownable
 		require(selectedCharacter > NUM_SOLO_CHAR && selectedCharacter <= (NUM_SOLO_CHAR + NUM_PAIR_CHAR), "Can only claim pair cards");
 
 		// Check that the input cards are valid
-		(uint256 character1,,) = f473tokensContract.deconstructCard(_cardId1);
+		(uint256 character1,,,) = f473tokensContract.deconstructCard(_cardId1);
 		require(character1 <= NUM_SOLO_CHAR, "Can only trade in solo cards");
 
-		(uint256 character2,,) = f473tokensContract.deconstructCard(_cardId2);
+		(uint256 character2,,,) = f473tokensContract.deconstructCard(_cardId2);
 		require(character2 <= NUM_SOLO_CHAR, "Can only trade in solo cards");
 
 		// Trade in the cards NOTE TO SELF THIS MIGHT BLOW UP IF WE'RE NOT CATCHING REQUIRE FAILURES
@@ -324,10 +339,10 @@ contract F473 is ReentrancyGuard, Ownable
 		require(_msgSender() == _cardId1Owner || _msgSender() == _cardId2Owner, "Caller must own at least one card");
 
 		// Check that the input cards are valid
-		(uint256 character1,,) = f473tokensContract.deconstructCard(_cardId1);
+		(uint256 character1,,,) = f473tokensContract.deconstructCard(_cardId1);
 		require(character1 > NUM_SOLO_CHAR && character1 <= NUM_SOLO_CHAR + NUM_PAIR_CHAR, "Can only trade in paired solo cards");
 
-		(uint256 character2,,) = f473tokensContract.deconstructCard(_cardId2);
+		(uint256 character2,,,) = f473tokensContract.deconstructCard(_cardId2);
 		require(character2 > NUM_SOLO_CHAR && character2 <= NUM_SOLO_CHAR + NUM_PAIR_CHAR, "Can only trade in paired solo cards");
 
 		// Require that the input cards are a pair - starts at an even number (46)
@@ -408,7 +423,7 @@ contract F473 is ReentrancyGuard, Ownable
 		heartsBurned[timeSlice] += _amount;
 
 		// Perform a specific action based on current card
-		(uint256 character,,) = f473tokensContract.deconstructCard(getCurrentCardCharacter(0));
+		(uint256 character,,,) = f473tokensContract.deconstructCard(getCurrentCardCharacter(0));
 
 		// Character card is a couple card
 		if (character > NUM_SOLO_CHAR + NUM_PAIR_CHAR) {
@@ -477,7 +492,7 @@ contract F473 is ReentrancyGuard, Ownable
 		}
 
 		// Perform a specific action based on current card
-		(uint256 character,,) = f473tokensContract.deconstructCard(getCurrentCardCharacter(0));
+		(uint256 character,,,) = f473tokensContract.deconstructCard(getCurrentCardCharacter(0));
 
 		// Character card is a couple card
 		if (character > NUM_SOLO_CHAR + NUM_PAIR_CHAR) {
@@ -856,7 +871,8 @@ contract F473 is ReentrancyGuard, Ownable
 		returns (
 			uint256 character,
 			uint256 background,
-			uint256 audio
+			uint256 audio,
+			uint256 version
 		)
 	{
 		return f473tokensContract.deconstructCard(_cardId);
