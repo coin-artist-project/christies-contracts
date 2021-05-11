@@ -99,8 +99,8 @@ describe('F473', function () {
   it('Should not allow a non-owner or non-game address from minting', async function () {
     await expectRevert(f473TokensContract.connect(acct1).mintCard(acct1.address, 1, 1, 1, 1), 'Game or owner caller only');
     await expectRevert(f473TokensContract.connect(acct2).mintCard(acct1.address, 1, 1, 1, 1), 'Game or owner caller only');
-    await expectRevert(f473TokensContract.connect(acct1).mintHearts(acct1.address, 1, 1), 'Game or owner caller only');
-    await expectRevert(f473TokensContract.connect(acct2).mintHearts(acct1.address, 1, 1), 'Game or owner caller only');
+    await expectRevert(f473TokensContract.connect(acct1).mintHearts(acct1.address, 1, 1, 1), 'Game or owner caller only');
+    await expectRevert(f473TokensContract.connect(acct2).mintHearts(acct1.address, 1, 1, 1), 'Game or owner caller only');
     await expectRevert(f473TokensContract.connect(acct1).burn(acct1.address, 1, 1), 'Game or owner caller only');
     await expectRevert(f473TokensContract.connect(acct2).burn(acct1.address, 1, 1), 'Game or owner caller only');
   });
@@ -526,8 +526,8 @@ describe('F473', function () {
           // Make sure that the transfer event has everything expected of it - from, to, id, value
           expect(event.args.from).to.equal('0x0000000000000000000000000000000000000000');
           expect(event.args.to).to.equal(acct2.address);
-          expect(event.args.id.toNumber()).to.be.gte(parseInt(0x10001, 10));
-          expect(event.args.id.toNumber()).to.be.lte(parseInt(0x10007, 10));
+          expect(event.args.id.toNumber()).to.be.gte(parseInt(0x110001, 10));
+          expect(event.args.id.toNumber()).to.be.lte(parseInt(0x110007, 10));
           expect(event.args.value).to.equal(1);
 
           // Make sure an event fired
@@ -543,13 +543,13 @@ describe('F473', function () {
     expect((await f473TokensContract.balanceOfBatch([
       acct1.address, acct1.address, acct1.address, acct1.address, acct1.address, acct1.address, acct1.address
     ], [
-      parseInt(0x10001, 10), parseInt(0x10002, 10), parseInt(0x10003, 10), parseInt(0x10004, 10), parseInt(0x10005, 10), parseInt(0x10006, 10), parseInt(0x10007, 10)
+      parseInt(0x110001, 10), parseInt(0x110002, 10), parseInt(0x110003, 10), parseInt(0x110004, 10), parseInt(0x110005, 10), parseInt(0x110006, 10), parseInt(0x110007, 10)
     ])).reduce((a, b) => {return parseInt(a, 10) + parseInt(b, 10)})).to.equal(0);
 
     expect((await f473TokensContract.balanceOfBatch([
       acct2.address, acct2.address, acct2.address, acct2.address, acct2.address, acct2.address, acct2.address
     ], [
-      parseInt(0x10001, 10), parseInt(0x10002, 10), parseInt(0x10003, 10), parseInt(0x10004, 10), parseInt(0x10005, 10), parseInt(0x10006, 10), parseInt(0x10007, 10)
+      parseInt(0x110001, 10), parseInt(0x110002, 10), parseInt(0x110003, 10), parseInt(0x110004, 10), parseInt(0x110005, 10), parseInt(0x110006, 10), parseInt(0x110007, 10)
     ])).reduce((a, b) => {return parseInt(a, 10) + parseInt(b, 10)})).to.equal(NUM_PAIR);
   });
 
@@ -589,8 +589,8 @@ describe('F473', function () {
           // Make sure that the transfer event has everything expected of it - from, to, id, value
           expect(event.args.from).to.equal('0x0000000000000000000000000000000000000000');
           expect(event.args.to).to.be.oneOf([acct1.address, acct2.address]);
-          expect(event.args.id.toNumber()).to.be.gte(parseInt(0x10001, 10));
-          expect(event.args.id.toNumber()).to.be.lte(parseInt(0x10007, 10));
+          expect(event.args.id.toNumber()).to.be.gte(parseInt(0x110001, 10));
+          expect(event.args.id.toNumber()).to.be.lte(parseInt(0x110007, 10));
           expect(event.args.value).to.equal(1);
 
           // Make sure an event fired
@@ -603,13 +603,13 @@ describe('F473', function () {
     expect((await f473TokensContract.balanceOfBatch([
       acct1.address, acct1.address, acct1.address, acct1.address, acct1.address, acct1.address, acct1.address
     ], [
-      parseInt(0x10001, 10), parseInt(0x10002, 10), parseInt(0x10003, 10), parseInt(0x10004, 10), parseInt(0x10005, 10), parseInt(0x10006, 10), parseInt(0x10007, 10)
+      parseInt(0x110001, 10), parseInt(0x110002, 10), parseInt(0x110003, 10), parseInt(0x110004, 10), parseInt(0x110005, 10), parseInt(0x110006, 10), parseInt(0x110007, 10)
     ])).reduce((a, b) => {return parseInt(a, 10) + parseInt(b, 10)})).to.equal(NUM_PAIR / 2);
 
     expect((await f473TokensContract.balanceOfBatch([
       acct2.address, acct2.address, acct2.address, acct2.address, acct2.address, acct2.address, acct2.address
     ], [
-      parseInt(0x10001, 10), parseInt(0x10002, 10), parseInt(0x10003, 10), parseInt(0x10004, 10), parseInt(0x10005, 10), parseInt(0x10006, 10), parseInt(0x10007, 10)
+      parseInt(0x110001, 10), parseInt(0x110002, 10), parseInt(0x110003, 10), parseInt(0x110004, 10), parseInt(0x110005, 10), parseInt(0x110006, 10), parseInt(0x110007, 10)
     ])).reduce((a, b) => {return parseInt(a, 10) + parseInt(b, 10)})).to.equal(NUM_PAIR + NUM_PAIR / 2);
 
     // Verify that the event fired
@@ -642,7 +642,7 @@ describe('F473', function () {
     let randomRoll = (await f473Contract.getRandomNumber(timeSlice)).toString();
 
     // Send hearts
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, f473Contract.heartsRandom(0), 10);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, f473Contract.heartsRandom(0), 1, 10);
     await f473Contract.connect(acct1).burnHearts(10);
 
     let newRandomRoll = (await f473Contract.getRandomNumber(timeSlice)).toString();
@@ -713,8 +713,8 @@ describe('F473', function () {
     expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(0);
 
     // Provide the hearts needed from the owner
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, f473Contract.heartsRandom(0), 100);
-    await f473TokensContract.connect(owner).mintHearts(acct2.address, f473Contract.heartsRandom(0), 100);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, f473Contract.heartsRandom(0), 1, 100);
+    await f473TokensContract.connect(owner).mintHearts(acct2.address, f473Contract.heartsRandom(0), 1, 100);
 
     // Submit all hearts needed
     await f473Contract.connect(acct1).burnHearts(10);

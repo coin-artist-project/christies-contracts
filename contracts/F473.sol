@@ -255,7 +255,7 @@ contract F473 is ReentrancyGuard, Ownable
 	{
 		uint256 heartsIndex = heartsRandom(0);
 		heartsMinted += _amount;
-		f473tokensContract.mintHearts(_to, heartsIndex, _amount);
+		f473tokensContract.mintHearts(_to, heartsIndex, GAME_VERSION, _amount);
 	}
 
 
@@ -407,13 +407,13 @@ contract F473 is ReentrancyGuard, Ownable
 		uint256 amountLeftToBurn = _amount;
 		for (uint256 idx = 0; idx < NUM_HEARTS_COLORS; idx++) {
 			uint256 heartsId = heartsRandom(idx);
-			uint256 balance = f473tokensContract.balanceOf(from, f473tokensContract.HEARTS_ID() + heartsId);
+			uint256 balance = f473tokensContract.balanceOf(from, (GAME_VERSION << f473tokensContract.VERSION_BITSHIFT()) + f473tokensContract.HEARTS_ID() + heartsId);
 
 			if (balance > 0 && balance < amountLeftToBurn) {
-				f473tokensContract.burn(from, f473tokensContract.HEARTS_ID() + heartsId, balance);
+				f473tokensContract.burn(from, (GAME_VERSION << f473tokensContract.VERSION_BITSHIFT()) + f473tokensContract.HEARTS_ID() + heartsId, balance);
 				amountLeftToBurn -= balance;
 			} else if (balance > 0 && balance >= amountLeftToBurn) {
-				f473tokensContract.burn(from, f473tokensContract.HEARTS_ID() + heartsId, amountLeftToBurn);
+				f473tokensContract.burn(from, (GAME_VERSION << f473tokensContract.VERSION_BITSHIFT()) + f473tokensContract.HEARTS_ID() + heartsId, amountLeftToBurn);
 				amountLeftToBurn = 0;
 			}
 		}

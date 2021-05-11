@@ -26,7 +26,7 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 	//uint256 constant CHARACTER_BITSHIFT  = 0;
 	uint256 constant BACKGROUND_BITSHIFT = 8;
 	uint256 constant AUDIO_BITSHIFT      = 12;
-	uint256 constant VERSION_BITSHIFT    = 20;
+	uint256 public constant VERSION_BITSHIFT = 20; // Added public
 
 	// Hearts token
 	uint256 public constant HEARTS_ID         = 0x10000;
@@ -90,13 +90,14 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 	function mintHearts(
 		address to,
 		uint256 index,
+		uint256 version,
 		uint256 amount
 	)
 		external
 		onlyGameOrOwner
 	{
 		require(index >= 1 && index <= NUM_HEARTS_COLORS, "Invalid hearts index");
-		_mint(to, HEARTS_ID + index, amount, "");
+		_mint(to, (version << VERSION_BITSHIFT) + HEARTS_ID + index, amount, "");
 	}
 
 	function burn(
