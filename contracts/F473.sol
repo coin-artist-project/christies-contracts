@@ -369,7 +369,6 @@ contract F473 is ReentrancyGuard, Ownable
 	{
 		// Make sure we're at the last level
 		uint256 timeSlice = getTimeSlice();
-		require(getLevel(timeSlice) == 9, "Only during level nine");
 
 		// Determine whether this card is permissible to be claimed
 		// Look up the token ID based on the index & game state
@@ -383,7 +382,9 @@ contract F473 is ReentrancyGuard, Ownable
 		mintCardAtIndex(_msgSender(), 0);
 
 		// Increase decay rate
-		loveDecayRate[timeSlice] += ++couplesClaimed[timeSlice];
+		if (getLevel(timeSlice) == 9) {
+			loveDecayRate[timeSlice] += ++couplesClaimed[timeSlice];
+		}
 	}
 
 	function burnHearts(
