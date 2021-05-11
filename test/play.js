@@ -669,7 +669,7 @@ describe('F473', function () {
     let currentCharacter = await f473Contract.getCurrentCardCharacter(0);
 
     // Trade card in
-    let tx = await f473Contract.connect(acct1).tradeForCoupleCard(acct1cards.pop());
+    let tx = await f473Contract.connect(acct1).tradeForCoupleCard(acct1cards.pop(), 0);
     let receipt = await tx.wait();
 
     // Now review the event

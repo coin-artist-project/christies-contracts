@@ -358,7 +358,8 @@ contract F473 is ReentrancyGuard, Ownable
 	}
 
 	function tradeForCoupleCard(
-		uint256 _cardId1
+		uint256 _cardId1,
+		uint256 _index
 	)
 		public
 		onlyAllowedAddress
@@ -372,14 +373,14 @@ contract F473 is ReentrancyGuard, Ownable
 
 		// Determine whether this card is permissible to be claimed
 		// Look up the token ID based on the index & game state
-		uint256 selectedCharacter = getCurrentCardCharacter(0);
+		uint256 selectedCharacter = getCurrentCardCharacter(_index);
 		require(selectedCharacter > NUM_SOLO_CHAR + NUM_PAIR_CHAR && selectedCharacter <= (NUM_SOLO_CHAR + NUM_PAIR_CHAR + NUM_COUPLE_CHAR), "Can only claim couple cards");
 
 		// Trade in the cards NOTE TO SELF THIS MIGHT BLOW UP IF WE'RE NOT CATCHING REQUIRE FAILURES
 		f473tokensContract.burn(_msgSender(), _cardId1, 1);
 
 		// Mint card
-		mintCardAtIndex(_msgSender(), 0);
+		mintCardAtIndex(_msgSender(), _index);
 
 		// Increase decay rate
 		if (getLevel(timeSlice) == 9) {
