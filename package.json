@@ -9,6 +9,8 @@
 		"deploy": "hardhat run ./scripts/deploy.js",
 		"mintCard": "hardhat run ./scripts/mintCard.js",
 		"mintHearts": "hardhat run ./scripts/mintHearts.js",
+		"rollGotoNextPair": "hardhat run ./scripts/rollGotoNextPair.js",
+		"rollGotoNextCouple": "hardhat run ./scripts/rollGotoNextCouple.js",
 		"rollGotoLevelSeven": "hardhat run ./scripts/rollGotoLevelSeven.js",
 		"rollGotoNextLevel": "hardhat run ./scripts/rollGotoNextLevel.js",
 		"setAllowlist": "hardhat run ./scripts/setAllowlist.js",
