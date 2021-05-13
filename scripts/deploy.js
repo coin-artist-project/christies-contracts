@@ -6,6 +6,11 @@
 const hre = require('hardhat');
 const { ethers } = require('hardhat');
 
+
+// A puzzle address
+const PUZZLE_PRIZE_ADDRESS = '0x0804C8ae5FDd715969E5719b79B2D6038D25aCE5';
+
+
 async function main() {
   // Check the address of the sender
   const [deployer] = await ethers.getSigners();
@@ -22,7 +27,7 @@ async function main() {
   const f473TokensContract = await F473Tokens.deploy();
 
   const F473 = await ethers.getContractFactory('F473');
-  const f473Contract = await F473.deploy(f473TokensContract.address);
+  const f473Contract = await F473.deploy(f473TokensContract.address, PUZZLE_PRIZE_ADDRESS);
 
   await f473TokensContract.setGameAddress(f473Contract.address);
 

@@ -10,6 +10,9 @@ contract F473 is ReentrancyGuard, Ownable
 	// NFT Contract
 	F473Tokens public f473tokensContract;
 
+	// Puzzle Prize Address
+	address public PUZZLE_PRIZE_ADDRESS;
+
 	// NFTs Config
 	uint256 NUM_SOLO_CHAR;
 	uint256 NUM_PAIR_CHAR;
@@ -61,12 +64,14 @@ contract F473 is ReentrancyGuard, Ownable
 	 */
 
 	constructor(
-		address payable _f473TokensAddress
+		address payable _f473TokensAddress,
+		address _puzzlePrizeAddress
 	)
 		Ownable()
 	{
 		// Set the F473 Tokens Contract
 		f473tokensContract = F473Tokens(_f473TokensAddress);
+		PUZZLE_PRIZE_ADDRESS = _puzzlePrizeAddress;
 
 		// Increase the game version, starts at 1
 		GAME_VERSION++;
@@ -126,7 +131,7 @@ contract F473 is ReentrancyGuard, Ownable
 	}
 
 	modifier gameNotOver() {
-		require(!GAME_OVER, "Game Over");
+		require(!GAME_OVER && checkPuzzlePrizeNotEmpty(), "Game Over");
 		_;
 	}
 
@@ -216,6 +221,14 @@ contract F473 is ReentrancyGuard, Ownable
 		onlyOwner
 	{
 		REQUIRE_ALLOWLIST = _trueOrFalse;
+	}
+
+	function checkPuzzlePrizeNotEmpty()
+		public
+		view
+		returns (bool)
+	{
+		return PUZZLE_PRIZE_ADDRESS.balance >= 1 ether;
 	}
 
 	function heartsRandom(

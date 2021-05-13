@@ -13,6 +13,7 @@ describe('F473', function () {
   let owner;
   let acct1;
   let acct2;
+  let puzzleAcct3;
   let accts;
 
   let acct1cards = [];
@@ -42,13 +43,13 @@ describe('F473', function () {
   }
 
   before(async () => {
-    [owner, acct1, acct2, ...accts] = await ethers.getSigners();
+    [owner, acct1, acct2, puzzleAcct3, ...accts] = await ethers.getSigners();
 
     const F473Tokens = await ethers.getContractFactory('F473Tokens');
     f473TokensContract = await F473Tokens.deploy();
 
     const F473 = await ethers.getContractFactory('F473');
-    f473Contract = await F473.deploy(f473TokensContract.address);
+    f473Contract = await F473.deploy(f473TokensContract.address, puzzleAcct3.address);
 
     await f473TokensContract.setGameAddress(f473Contract.address);
 
@@ -742,7 +743,6 @@ describe('F473', function () {
     expect(await f473Contract.GAME_OVER()).to.equal(true);
   });
 
-
   it('Enumerate both accounts tokens', async function () {
     let acct1Tokens = (await f473TokensContract.getAccountTokensCount(acct1.address)).toNumber();
     let acct2Tokens = (await f473TokensContract.getAccountTokensCount(acct2.address)).toNumber();
@@ -775,6 +775,12 @@ describe('F473', function () {
 
     expect(acct2Tokens).to.equal(tokenCount);
   });
+
+
+
+  /**
+   * Hearts & Lights
+   **/
 
   it('Get all lights, should be zero', async function () {
     let lights = (await f473Contract.getLights());
@@ -832,6 +838,34 @@ describe('F473', function () {
     expect(tokens.version.length).to.equal(tokens.tokenIds.length);
     expect(tokens.amounts.length).to.equal(tokens.tokenIds.length);
   });
+
+
+
+  /**
+   * Puzzle Prize checks & Puzzle Game Over
+   **/
+
+  it('F473 Contract should know that puzzle prize is unclaimed', async function () {
+    let response = await f473Contract.checkPuzzlePrizeNotEmpty();
+    expect(response).to.equal(true);
+  });
+
+  it('F473 Contract should see when puzzle prize is claimed', async function () {
+    await puzzleAcct3.sendTransaction({
+        from: puzzleAcct3.address,
+        to: acct2.address,
+        value: (await puzzleAcct3.getBalance()).sub("168008000000000")._hex // Subtract gas fee, convert to hex
+    });
+
+    let response = await f473Contract.checkPuzzlePrizeNotEmpty();
+    expect(response).to.equal(false);
+  });
+
+
+
+  /**
+   * Final sanity checks
+   **/
 
   it('Double check that every random number is unique', async function () {
     let timeSlice = (await f473Contract.getTimeSlice()).toNumber();
