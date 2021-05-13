@@ -6,7 +6,6 @@
 const hre = require('hardhat');
 const { ethers } = require('hardhat');
 
-
 // A puzzle address
 //const PUZZLE_PRIZE_ADDRESS = '0x0804C8ae5FDd715969E5719b79B2D6038D25aCE5';
 const PUZZLE_PRIZE_ADDRESS = '0x90f79bf6eb2c4f870365e785982e1f101e93b906';
