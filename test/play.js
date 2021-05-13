@@ -9,7 +9,7 @@ const {
 } = require('@openzeppelin/test-helpers');
 
 describe('F473', function () {
-  let f473Contract, f473TokensContract;
+  let f473Contract, f473TokensContract, f473ReplayTokenContract;
   let owner;
   let acct1;
   let acct2;
@@ -45,13 +45,21 @@ describe('F473', function () {
   before(async () => {
     [owner, acct1, acct2, puzzleAcct3, ...accts] = await ethers.getSigners();
 
+    const F473ReplayToken = await ethers.getContractFactory('F473ReplayToken');
+    f473ReplayTokenContract = await F473ReplayToken.deploy("https://localhost/{uri}.json");
+
     const F473Tokens = await ethers.getContractFactory('F473Tokens');
     f473TokensContract = await F473Tokens.deploy();
 
     const F473 = await ethers.getContractFactory('F473');
-    f473Contract = await F473.deploy(f473TokensContract.address, puzzleAcct3.address);
+    f473Contract = await F473.deploy(
+      f473TokensContract.address,
+      f473ReplayTokenContract.address,
+      puzzleAcct3.address
+    );
 
     await f473TokensContract.setGameAddress(f473Contract.address);
+    await f473ReplayTokenContract.setGameAddress(f473Contract.address);
 
     NUM_SOLO         = (await f473TokensContract.NUM_SOLO_CHAR()).toNumber();
     NUM_PAIR         = (await f473TokensContract.NUM_PAIR_CHAR()).toNumber();
@@ -83,6 +91,24 @@ describe('F473', function () {
   it('Should not allow a non-owner to set the Game Address', async function () {
     await expectRevert(f473TokensContract.connect(acct1).setGameAddress(acct1.address), 'Ownable: caller is not the owner');
     await expectRevert(f473TokensContract.connect(acct2).setGameAddress(acct1.address), 'Ownable: caller is not the owner');
+    await expectRevert(f473ReplayTokenContract.connect(acct1).setGameAddress(acct1.address), 'Ownable: caller is not the owner');
+    await expectRevert(f473ReplayTokenContract.connect(acct2).setGameAddress(acct1.address), 'Ownable: caller is not the owner');
+  });
+
+  it('Should not allow anyone, not even owner, to try to restart the game directly', async function () {
+    await expectRevert(f473Contract.connect(owner).restartGame(), 'Replay Token required');
+    await expectRevert(f473Contract.connect(acct1).restartGame(), 'Replay Token required');
+    await expectRevert(f473Contract.connect(acct2).restartGame(), 'Replay Token required');
+  });
+
+  it('Should allow minting the Replay tokens', async function () {
+    await f473ReplayTokenContract.connect(owner).mint(acct2.address, 5);
+  });
+
+  it('Should not allow replay token holder to restart game while game is active', async function () {
+    await expectRevert(f473ReplayTokenContract.connect(owner).burnAndRestart(), "Game must be over to replay");
+    await expectRevert(f473ReplayTokenContract.connect(acct1).burnAndRestart(), "Game must be over to replay");
+    await expectRevert(f473ReplayTokenContract.connect(acct2).burnAndRestart(), "Game must be over to replay");
   });
 
   it('Should allow owner to set the URI', async function () {
@@ -105,6 +131,21 @@ describe('F473', function () {
     await expectRevert(f473TokensContract.connect(acct1).burn(acct1.address, 1, 1), 'Game or owner caller only');
     await expectRevert(f473TokensContract.connect(acct2).burn(acct1.address, 1, 1), 'Game or owner caller only');
   });
+
+  it('Get all lights, should be zero', async function () {
+    let lights = (await f473Contract.getLights());
+
+    for (let light of lights) {
+      expect(light.toNumber()).to.equal(0);
+    }
+  });
+
+  
+
+
+  /**
+   * Gameplay
+   **/
 
   it('Should allow adding an address to the permitted list, removing, and then adding again', async function () {
     response = await f473Contract.checkAllowedAddress(acct1.address);
@@ -701,7 +742,7 @@ describe('F473', function () {
     expect((await f473Contract.getLoveMeterSize()).toNumber()).to.equal(100);
   });
 
-  it('Allow players to beat the game', async function () {
+  async function beatTheGame(version = 1) {
     // Start by finding a level that starts without a couple
     do {
       await forwardToNextLevel9();
@@ -714,8 +755,8 @@ describe('F473', function () {
     expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(0);
 
     // Provide the hearts needed from the owner
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, f473Contract.heartsRandom(0), 1, 100);
-    await f473TokensContract.connect(owner).mintHearts(acct2.address, f473Contract.heartsRandom(0), 1, 100);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, f473Contract.heartsRandom(0), version, 100);
+    await f473TokensContract.connect(owner).mintHearts(acct2.address, f473Contract.heartsRandom(0), version, 100);
 
     // Submit all hearts needed
     await f473Contract.connect(acct1).burnHearts(10);
@@ -741,7 +782,71 @@ describe('F473', function () {
     expect((await f473Contract.getCurrentLevel()).toNumber()).to.equal(12);
     expect((await f473Contract.getCurrentPhase()).toNumber()).to.equal(4);
     expect(await f473Contract.GAME_OVER()).to.equal(true);
+  }
+
+  it('Allow players to beat the game', beatTheGame.bind(this, 1));
+
+  it('Should not allow non-replay token holder to restart game without token', async function () {
+    await expectRevert(f473ReplayTokenContract.connect(owner).burnAndRestart(), "ERC1155: burn amount exceeds balance");
+    await expectRevert(f473ReplayTokenContract.connect(acct1).burnAndRestart(), "ERC1155: burn amount exceeds balance");
   });
+
+  it('Should allow replay token holder to replay game', async function () {
+    // Make sure game is over
+    expect(await f473Contract.GAME_OVER()).to.equal(true);
+
+    await f473ReplayTokenContract.connect(acct2).burnAndRestart();
+    expect((await f473ReplayTokenContract.balanceOf(acct2.address, 1)).toNumber()).to.equal(4);
+
+    // Check that game is restarted
+    expect(await f473Contract.GAME_OVER()).to.equal(false);
+
+    // Move to the next time frame for the following test
+    ethers.provider.send("evm_increaseTime", [60 * 10]);
+    ethers.provider.send("evm_mine");
+  });
+
+  it('Allow players to beat the game [again]', beatTheGame.bind(this, 2));
+
+  it('Should allow regular players to restart the game using hearts', async function () {
+    // Mint all hearts
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 1, 1, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 2, 1, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 3, 1, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 4, 1, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 5, 1, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 6, 1, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 7, 1, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 1, 2, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 2, 2, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 3, 2, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 4, 2, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 5, 2, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 6, 2, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 7, 2, 20);
+
+    // Set all of the lights to the restart pattern
+    await f473Contract.connect(acct1).burnHeartLightRegion(0, 0x210001);
+    await f473Contract.connect(acct1).burnHeartLightRegion(1, 0x110002);
+    await f473Contract.connect(acct1).burnHeartLightRegion(2, 0x210003);
+    await f473Contract.connect(acct1).burnHeartLightRegion(3, 0x210004);
+    await f473Contract.connect(acct1).burnHeartLightRegion(4, 0x110005);
+    await f473Contract.connect(acct1).burnHeartLightRegion(5, 0x210006);
+    await f473Contract.connect(acct1).burnHeartLightRegion(6, 0x210007);
+    await f473Contract.connect(acct1).burnHeartLightRegion(7, 0x210006);
+
+    // Check that game is still over
+    expect(await f473Contract.GAME_OVER()).to.equal(true);
+
+    // Final color
+    await f473Contract.connect(acct1).burnHeartLightRegion(8, 0x110005);
+
+    // Check that game is restarted
+    expect(await f473Contract.GAME_OVER()).to.equal(false);
+  });
+
+  // Required to verify later that the game is still over after puzzle is solved
+  it('Allow players to beat the game [again x2]', beatTheGame.bind(this, 3));
 
   it('Enumerate both accounts tokens', async function () {
     let acct1Tokens = (await f473TokensContract.getAccountTokensCount(acct1.address)).toNumber();
@@ -777,18 +882,9 @@ describe('F473', function () {
   });
 
 
-
   /**
    * Hearts & Lights
    **/
-
-  it('Get all lights, should be zero', async function () {
-    let lights = (await f473Contract.getLights());
-
-    for (let light of lights) {
-      expect(light.toNumber()).to.equal(0);
-    }
-  });
 
   it('Send various hearts, should light them up appropriately', async function () {
     // Enumerate
@@ -804,6 +900,10 @@ describe('F473', function () {
       if ((token.toNumber() & parseInt(0x10000, 10)) > 0) {
         await f473Contract.connect(acct1).burnHeartLightRegion(lastLitRegion, token);
         hearts[lastLitRegion++] = token;
+      }
+
+      if (lastLitRegion > 8) {
+        break;
       }
     }
 
@@ -840,7 +940,6 @@ describe('F473', function () {
   });
 
 
-
   /**
    * Puzzle Prize checks & Puzzle Game Over
    **/
@@ -859,6 +958,65 @@ describe('F473', function () {
 
     let response = await f473Contract.checkPuzzlePrizeNotEmpty();
     expect(response).to.equal(false);
+  });
+
+  it('Should NOT allow regular players to restart the game using hearts', async function () {
+    // Set all of the lights to the restart pattern
+    await f473Contract.connect(acct1).burnHeartLightRegion(0, 0x210001);
+    await f473Contract.connect(acct1).burnHeartLightRegion(1, 0x110002);
+    await f473Contract.connect(acct1).burnHeartLightRegion(2, 0x210003);
+    await f473Contract.connect(acct1).burnHeartLightRegion(3, 0x210004);
+    await f473Contract.connect(acct1).burnHeartLightRegion(4, 0x110005);
+    await f473Contract.connect(acct1).burnHeartLightRegion(5, 0x210006);
+    await f473Contract.connect(acct1).burnHeartLightRegion(6, 0x210007);
+    await f473Contract.connect(acct1).burnHeartLightRegion(7, 0x210006);
+
+    // Check that game is still over
+    expect(await f473Contract.GAME_OVER()).to.equal(true);
+
+    // Final color
+    await f473Contract.connect(acct1).burnHeartLightRegion(8, 0x110005);
+
+    // Check that game is restarted
+    expect(await f473Contract.GAME_OVER()).to.equal(true);
+  });
+
+  it('Should allow replay token holder to replay game EVEN THOUGH puzzle is solved', async function () {
+    // Make sure game is over
+    expect(await f473Contract.GAME_OVER()).to.equal(true);
+
+    await f473ReplayTokenContract.connect(acct2).burnAndRestart();
+    expect((await f473ReplayTokenContract.balanceOf(acct2.address, 1)).toNumber()).to.equal(3);
+
+    // Check that game is restarted
+    expect(await f473Contract.GAME_OVER()).to.equal(false);
+
+    // Move to the next time frame for the following test
+    ethers.provider.send("evm_increaseTime", [60 * 10]);
+    ethers.provider.send("evm_mine");
+  });
+
+  it('Allow players to beat the game [again x3]', beatTheGame.bind(this, 4));
+
+  it('Should NOT allow regular players to restart the game using hearts [again]', async function () {
+    // Set all of the lights to the restart pattern
+    await f473Contract.connect(acct1).burnHeartLightRegion(0, 0x210001);
+    await f473Contract.connect(acct1).burnHeartLightRegion(1, 0x110002);
+    await f473Contract.connect(acct1).burnHeartLightRegion(2, 0x210003);
+    await f473Contract.connect(acct1).burnHeartLightRegion(3, 0x210004);
+    await f473Contract.connect(acct1).burnHeartLightRegion(4, 0x110005);
+    await f473Contract.connect(acct1).burnHeartLightRegion(5, 0x210006);
+    await f473Contract.connect(acct1).burnHeartLightRegion(6, 0x210007);
+    await f473Contract.connect(acct1).burnHeartLightRegion(7, 0x210006);
+
+    // Check that game is still over
+    expect(await f473Contract.GAME_OVER()).to.equal(true);
+
+    // Final color
+    await f473Contract.connect(acct1).burnHeartLightRegion(8, 0x110005);
+
+    // Check that game is restarted
+    expect(await f473Contract.GAME_OVER()).to.equal(true);
   });
 
 

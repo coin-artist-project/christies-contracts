@@ -10,8 +10,12 @@ contract F473 is ReentrancyGuard, Ownable
 	// NFT Contract
 	F473Tokens public f473tokensContract;
 
+	// Replay Token Address
+	address public F473_REPLAY_ADDRESS;
+
 	// Puzzle Prize Address
 	address public PUZZLE_PRIZE_ADDRESS;
+	bool BYPASS_PUZZLE_PRIZE;
 
 	// NFTs Config
 	uint256 NUM_SOLO_CHAR;
@@ -52,7 +56,7 @@ contract F473 is ReentrancyGuard, Ownable
 
 	// Allowlist & Logic
 	mapping (address => bool) allowedAddresses;
-	mapping (address => uint256) addressLastMove;
+	mapping (uint256 => mapping (address => uint256)) addressLastMove;
 	bool public REQUIRE_ALLOWLIST = true; // Default is locked
 
 	// RNG
@@ -65,16 +69,15 @@ contract F473 is ReentrancyGuard, Ownable
 
 	constructor(
 		address payable _f473TokensAddress,
+		address _f473ReplayTokensAddress,
 		address _puzzlePrizeAddress
 	)
 		Ownable()
 	{
 		// Set the F473 Tokens Contract
 		f473tokensContract = F473Tokens(_f473TokensAddress);
+		F473_REPLAY_ADDRESS = _f473ReplayTokensAddress;
 		PUZZLE_PRIZE_ADDRESS = _puzzlePrizeAddress;
-
-		// Increase the game version, starts at 1
-		GAME_VERSION++;
 
 		// Get all the config values
 		NUM_SOLO_CHAR     = f473tokensContract.NUM_SOLO_CHAR();
@@ -90,12 +93,25 @@ contract F473 is ReentrancyGuard, Ownable
 		// Set up the region lights
 		regionHearts = new uint256[](9);
 
+		// Start the game for the first time
+		_restartGame();
+	}
+
+	function _restartGame()
+		internal
+	{
+		// Increase the game version, starts at 1
+		GAME_VERSION++;
+
 		// Set the game start
 		GAME_START = block.timestamp;
 		GAME_OVER = false;
 
+		// Get time slice
+		uint256 timeSlice = getTimeSlice();
+
 		// Set the first few random numbers
-		randomNumbers[lastRandomTimeSlice] = uint256(
+		randomNumbers[timeSlice] = uint256(
 			keccak256(
 				abi.encodePacked(
 					blockhash(block.number - 1),
@@ -104,7 +120,7 @@ contract F473 is ReentrancyGuard, Ownable
 			)
 		);
 
-		randomNumbers[lastRandomTimeSlice + 1] = uint256(
+		randomNumbers[timeSlice + 1] = uint256(
 			keccak256(
 				abi.encodePacked(
 					randomNumbers[0],
@@ -114,7 +130,7 @@ contract F473 is ReentrancyGuard, Ownable
 			)
 		);
 
-		randomNumbers[lastRandomTimeSlice + 2] = uint256(
+		randomNumbers[timeSlice + 2] = uint256(
 			keccak256(
 				abi.encodePacked(
 					randomNumbers[1],
@@ -123,6 +139,9 @@ contract F473 is ReentrancyGuard, Ownable
 				)
 			)
 		);
+
+		// Set last random time slice
+		lastRandomTimeSlice = timeSlice + 2;
 	}
 
 	modifier onlyAllowedAddress() {
@@ -131,7 +150,7 @@ contract F473 is ReentrancyGuard, Ownable
 	}
 
 	modifier gameNotOver() {
-		require(!GAME_OVER && checkPuzzlePrizeNotEmpty(), "Game Over");
+		require(!GAME_OVER && (checkPuzzlePrizeNotEmpty() || BYPASS_PUZZLE_PRIZE), "Game Over");
 		_;
 	}
 
@@ -142,6 +161,11 @@ contract F473 is ReentrancyGuard, Ownable
 
 	modifier validIndex(uint256 _timeSlice, uint256 _index) {
 		require(_index <= TOTAL_CARD_SLOTS - getLevel(_timeSlice) && getLevel(_timeSlice) > 0 && getLevel(_timeSlice) <= 9, "Invalid index");
+		_;
+	}
+
+	modifier onlyReplayToken() {
+		require(_msgSender() == F473_REPLAY_ADDRESS, "Replay Token required");
 		_;
 	}
 
@@ -173,9 +197,19 @@ contract F473 is ReentrancyGuard, Ownable
 	modifier oneActionPerAddressPerTimeSlice() {
 		// Make sure that this address hasn't already moved this time slice
 		uint256 timeSlice = getTimeSlice();
-		require(addressLastMove[_msgSender()] < timeSlice + 1, "Already moved this time frame");
-		addressLastMove[_msgSender()] = timeSlice + 1; // Why +1? Because 0 is the first index.
+		require(addressLastMove[GAME_VERSION][_msgSender()] < timeSlice + 1, "Already moved this time frame");
+		addressLastMove[GAME_VERSION][_msgSender()] = timeSlice + 1; // Why +1? Because 0 is the first index.
 		_;
+	}
+
+	function movedThisFrame(
+		address _addr
+	)
+		public
+		view
+		returns (bool)
+	{
+		return addressLastMove[GAME_VERSION][_addr] == (getTimeSlice() + 1);
 	}
 
 	function updateRandomNumber(
@@ -468,6 +502,43 @@ contract F473 is ReentrancyGuard, Ownable
 		require((f473tokensContract.HEARTS_ID() & _tokenId) > 0, "Only hearts");
 		f473tokensContract.burn(_msgSender(), _tokenId, 1);
 		regionHearts[_region] = _tokenId;
+
+		// Check if the game restarts
+		checkGameRestarts();
+	}
+
+	function checkGameRestarts()
+		internal
+	{
+		// If the game is over, but the puzzle prize isn't empty, players can restart the game with a desired hearts input
+		if (GAME_OVER && checkPuzzlePrizeNotEmpty()) {
+			uint256 TOKENID_BITMASK = ~(f473tokensContract.VERSION_BITMASK());
+			if (
+				(regionHearts[0] & TOKENID_BITMASK) == 0x10001 &&
+				(regionHearts[1] & TOKENID_BITMASK) == 0x10002 &&
+				(regionHearts[2] & TOKENID_BITMASK) == 0x10003 &&
+				(regionHearts[3] & TOKENID_BITMASK) == 0x10004 &&
+				(regionHearts[4] & TOKENID_BITMASK) == 0x10005 &&
+				(regionHearts[5] & TOKENID_BITMASK) == 0x10006 &&
+				(regionHearts[6] & TOKENID_BITMASK) == 0x10007 &&
+				(regionHearts[7] & TOKENID_BITMASK) == 0x10006 &&
+				(regionHearts[8] & TOKENID_BITMASK) == 0x10005
+			) {
+				_restartGame();
+			}
+		}
+	}
+
+	function restartGame()
+		public
+		onlyReplayToken
+	{
+		// If the prize is empty, bypass this check
+		if (!checkPuzzlePrizeNotEmpty()) {
+			BYPASS_PUZZLE_PRIZE = true;
+		}
+
+		_restartGame();
 	}
 
 
@@ -875,23 +946,6 @@ contract F473 is ReentrancyGuard, Ownable
 		);
 	}
 
-	/**
-	 * Call the token contract
-	 **/
-	function deconstructCard(
-		uint256 _cardId
-	)
-		public
-		view
-		returns (
-			uint256 character,
-			uint256 background,
-			uint256 audio,
-			uint256 version
-		)
-	{
-		return f473tokensContract.deconstructCard(_cardId);
-	}
 
 	/**
 	 * @dev do not accept value sent directly to contract
@@ -900,6 +954,6 @@ contract F473 is ReentrancyGuard, Ownable
 		external
 		payable
 	{
-		revert("No value accepted");
+		revert();
 	}
 }

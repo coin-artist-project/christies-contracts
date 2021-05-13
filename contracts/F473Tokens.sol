@@ -22,7 +22,7 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 	uint256 constant BACKGROUND_BITMASK  = 0x000f00;
 	uint256 constant AUDIO_BITMASK       = 0x00f000;
 	//uint256 constant HEARTS_BITMASK    = 0x0f0000;
-	uint256 constant VERSION_BITMASK     = 0xf00000;
+	uint256 public constant VERSION_BITMASK = 0xf00000;
 	//uint256 constant CHARACTER_BITSHIFT  = 0;
 	uint256 constant BACKGROUND_BITSHIFT = 8;
 	uint256 constant AUDIO_BITSHIFT      = 12;
@@ -200,6 +200,6 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 		external
 		payable
 	{
-		revert("No value accepted");
+		revert();
 	}
 }
