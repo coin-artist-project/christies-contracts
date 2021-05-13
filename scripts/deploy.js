@@ -25,7 +25,7 @@ async function main() {
 
   // Deploy F473 Replay contracts
   const F473ReplayToken = await ethers.getContractFactory('F473ReplayToken');
-  const f473ReplayTokenContract = await F473ReplayToken.deploy();
+  const f473ReplayTokenContract = await F473ReplayToken.deploy("http://localhost/{url}.json");
 
   // Deploy F473 contracts
   const F473Tokens = await ethers.getContractFactory('F473Tokens');
@@ -41,6 +41,7 @@ async function main() {
   await f473TokensContract.setGameAddress(f473Contract.address);
   await f473ReplayTokenContract.setGameAddress(f473Contract.address);
 
+  console.log('F473ReplayToken deployed to:', f473ReplayTokenContract.address);
   console.log('F473Tokens deployed to:', f473TokensContract.address);
   console.log('F473 deployed to:', f473Contract.address);
 }
