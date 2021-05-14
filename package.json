@@ -7,6 +7,7 @@
 		"chain": "hardhat node",
 		"compile": "hardhat compile",
 		"deploy": "hardhat run ./scripts/deploy.js",
+		"airdropTestnetFunds": "hardhat run ./scripts/airdropTestnetFunds.js",
 		"mintCard": "hardhat run ./scripts/mintCard.js",
 		"mintAllPairs": "hardhat run ./scripts/mintAllPairs.js",
 		"mintHearts": "hardhat run ./scripts/mintHearts.js",
