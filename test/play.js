@@ -540,6 +540,13 @@ describe('F473', function () {
     }
   });
 
+  it('Disallow acct2 to send two of the same pair card to claim hearts', async function () {
+    ethers.provider.send("evm_increaseTime", [60 * 10]);
+    ethers.provider.send("evm_mine");
+    let id1 = await f473TokensContract.constructCardManual(46, 1, 2, 1);
+    await expectRevert(f473Contract.connect(acct2).tradeForHearts(acct2.address, id1, acct2.address, id1), 'Not a pair');
+  });
+
   it('Allow acct2 to send a pair to get hearts', async function () {
     let eventPresent = false;
 

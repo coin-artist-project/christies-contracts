@@ -393,7 +393,7 @@ contract F473 is ReentrancyGuard, Ownable
 		require(character2 > NUM_SOLO_CHAR && character2 <= NUM_SOLO_CHAR + NUM_PAIR_CHAR, "Can only trade in paired solo cards");
 
 		// Require that the input cards are a pair - starts at an even number (46)
-		require(character1 / 2 == character2 / 2, "Not a pair");
+		require(character1 != character2 && character1 / 2 == character2 / 2, "Not a pair");
 
 		// Trade in the cards NOTE TO SELF THIS MIGHT BLOW UP IF WE'RE NOT CATCHING REQUIRE FAILURES
 		f473tokensContract.burn(_cardId1Owner, _cardId1, 1);
