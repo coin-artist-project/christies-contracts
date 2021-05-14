@@ -8,6 +8,7 @@
 		"compile": "hardhat compile",
 		"deploy": "hardhat run ./scripts/deploy.js",
 		"mintCard": "hardhat run ./scripts/mintCard.js",
+		"mintAllPairs": "hardhat run ./scripts/mintAllPairs.js",
 		"mintHearts": "hardhat run ./scripts/mintHearts.js",
 		"rollGotoNextPair": "hardhat run ./scripts/rollGotoNextPair.js",
 		"rollGotoNextCouple": "hardhat run ./scripts/rollGotoNextCouple.js",
