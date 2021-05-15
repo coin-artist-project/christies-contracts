@@ -604,6 +604,14 @@ contract F473 is ReentrancyGuard, Ownable
 		return (block.timestamp - GAME_START) / SECONDS_PER_LEVEL;
 	}
 
+	function getLevelTimeRemaining()
+		public
+		view
+		returns (uint256)
+	{
+		return SECONDS_PER_LEVEL - ((block.timestamp - GAME_START) % SECONDS_PER_LEVEL);
+	}
+
 	function getRandomNumber(
 		uint256 _timeSlice
 	)

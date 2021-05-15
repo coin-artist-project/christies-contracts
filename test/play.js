@@ -674,6 +674,7 @@ describe('F473', function () {
     //console.log((await f473Contract.getLoveMeterSize()).toNumber());
     //console.log(randomRoll, newRandomRoll);
 
+
   it('Ensure that Level 9 has all the information needed, and random roll changes when solo or pair is replaced', async function () {
     // Start by finding a level that starts without a couple
     do {
@@ -1031,6 +1032,24 @@ describe('F473', function () {
   /**
    * Final sanity checks
    **/
+
+  it('Ensure that we can get the time remaining ahead of the following level', async function () {
+
+    // See how much time is remaining
+    let timeRemaining = await f473Contract.getLevelTimeRemaining();
+
+    // Start by finding a level that starts without a couple -- 5 is arbitrary
+    for (let idx = 0; idx < 5; idx++) {
+      // Bump a minute
+      ethers.provider.send("evm_increaseTime", [60]);
+      ethers.provider.send("evm_mine");
+
+      // Expect that the time remaining is decreaing by 60 seconds each time 
+      let currentTimeRemaining = await f473Contract.getLevelTimeRemaining();
+      expect(timeRemaining - currentTimeRemaining).to.equal(60);
+      timeRemaining = currentTimeRemaining;
+    }
+  });
 
   it('Double check that every random number is unique', async function () {
     let timeSlice = (await f473Contract.getTimeSlice()).toNumber();
