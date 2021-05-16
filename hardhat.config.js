@@ -23,7 +23,11 @@ module.exports = {
   defaultNetwork: 'localhost', // 'hardhat'
   networks: {
     hardhat: {
-      allowUnlimitedContractSize: false
+      allowUnlimitedContractSize: false,
+      //mining: {
+      //  auto: false,
+      //  interval: 2000
+      //}
     },
     mainnet: {
       url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,

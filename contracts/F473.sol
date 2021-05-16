@@ -713,7 +713,7 @@ contract F473 is ReentrancyGuard, Ownable
 			return NUM_FINAL_AUDIO;
 		}
 
-		return 0;
+		return NUM_SOLO_AUDIO;
 	}
 
 	function getCardCharacter(
@@ -780,12 +780,13 @@ contract F473 is ReentrancyGuard, Ownable
 		returns (uint256[] memory)
 	{
 		// If the level is invalid, exit
-		if (getLevel(_timeSlice) == 0) {
+		uint256 level = getLevel(_timeSlice);
+		if (level == 0) {
 			return new uint256[](9);
 		}
 
 		// Get the current random number & deck size right now
-		uint256 lastIndex = NUM_LEVELS - getLevel(_timeSlice);
+		uint256 lastIndex = NUM_LEVELS - level;
 		uint256 randomNumber = getRandomNumber(_timeSlice);
 
 		// Draw unique cards from the batch
@@ -820,8 +821,13 @@ contract F473 is ReentrancyGuard, Ownable
 		validTimeSlice(_timeSlice)
 		returns (uint256[] memory)
 	{
+		uint256 level = getLevel(_timeSlice);
+		if (level == 0 || level == 12) {
+			return new uint256[](9);
+		}
+
 		// Draw unique cards from the batch
-		uint256 lastIndex = NUM_LEVELS - getLevel(_timeSlice);
+		uint256 lastIndex = NUM_LEVELS - level;
 		uint256[] memory cardBackgrounds = new uint256[](9);
 		for (uint256 iter; iter <= lastIndex; iter++) {
 			cardBackgrounds[iter] = getCardBackground(_timeSlice, iter);
@@ -960,6 +966,30 @@ contract F473 is ReentrancyGuard, Ownable
 		return getCardCharacterPositions(
 			getTimeSlice()
 		);
+	}
+
+	function getGameState()
+		public
+		view
+		returns (
+			uint256 timeSlice,
+			uint256 level,
+			uint256 phase,
+			uint256 timeRemaining,
+			uint256[] memory characters,
+			uint256[] memory backgrounds,
+			uint256 audio,
+			uint256[] memory positions
+		)
+	{
+		timeSlice     = getTimeSlice();
+		level         = getCurrentLevel();
+		phase         = getCurrentPhase();
+		timeRemaining = getLevelTimeRemaining();
+		characters    = getCurrentCardCharacters();
+		backgrounds   = getCurrentCardBackgrounds();
+		audio         = getCurrentCardAudio();
+		positions     = getCurrentCardCharacterPositions();
 	}
 
 

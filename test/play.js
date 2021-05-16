@@ -189,6 +189,9 @@ describe('F473', function () {
 
   it('Should iterate through all levels and phases as expected over a 4 hour period & also get appropriate positions', async function () {
     for (let iter = 0; iter < 24; iter++) {
+      let gameState = await f473Contract.getGameState();
+      // RBH TODO -- can do expects here to make sure everything is kosher
+
       let level = await f473Contract.getCurrentLevel();
       expect(level).to.equal((iter + 1) % 12 > 9 ? 0 : (iter + 1) % 12);
 
