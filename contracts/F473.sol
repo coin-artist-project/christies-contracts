@@ -619,15 +619,23 @@ contract F473 is ReentrancyGuard, Ownable
 		view
 		returns (uint256)
 	{
-		if (_timeSlice > lastRandomTimeSlice) {
-			return randomNumbers[lastRandomTimeSlice];
+		uint256 _localLastRandomTimeSlice = _timeSlice;
+		if (_localLastRandomTimeSlice > lastRandomTimeSlice) {
+			_localLastRandomTimeSlice = lastRandomTimeSlice;
 		}
 
-		while (randomNumbers[_timeSlice] == 0) {
-			_timeSlice--;
+		while (randomNumbers[_localLastRandomTimeSlice] == 0) {
+			_localLastRandomTimeSlice--;
 		}
 
-		return randomNumbers[_timeSlice];
+		return uint256(
+			keccak256(
+				abi.encodePacked(
+					_timeSlice,
+					randomNumbers[_localLastRandomTimeSlice]
+				)
+			)
+		);
 	}
 
 	function getLevel(

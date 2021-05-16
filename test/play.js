@@ -353,6 +353,7 @@ describe('F473', function () {
         let timeSlice = await f473Contract.getTimeSlice();
         let thisRandomNumber = await f473Contract.getRandomNumber(timeSlice);
         let nextRandomNumber = await f473Contract.getRandomNumber(timeSlice + 1);
+        let nextNextRandomNumber = await f473Contract.getRandomNumber(timeSlice + 2);
 
         // Get the expected background & audio for this layer
         let background = await f473Contract.getCurrentCardBackground(viableSelection);
@@ -365,6 +366,7 @@ describe('F473', function () {
         // Random number for *this* time slice should stay the same, random number for *next* time slice should change
         expect((await f473Contract.getRandomNumber(timeSlice)).toString()).to.equal(thisRandomNumber.toString());
         expect((await f473Contract.getRandomNumber(timeSlice + 1)).toString()).to.not.equal(nextRandomNumber.toString());
+        expect((await f473Contract.getRandomNumber(timeSlice + 2)).toString()).to.not.equal(nextNextRandomNumber.toString());
 
         // Now review the event
         let eventPresent = false;
@@ -1062,7 +1064,7 @@ describe('F473', function () {
         lastTsRandomNumber = tsRandomNumber;
       }
 
-      expect(thisRandomNumber).to.equal(lastTsRandomNumber);
+      expect(thisRandomNumber).to.not.equal(lastTsRandomNumber);
     }
   });
 
@@ -1074,7 +1076,7 @@ describe('F473', function () {
     ethers.provider.send("evm_mine");
 
     let laterTimeSlice = (await f473Contract.getTimeSlice()).toNumber();
-    expect(await f473Contract.getRandomNumber(laterTimeSlice)).to.equal(lastReasonableRandomNumber);
+    expect(await f473Contract.getRandomNumber(laterTimeSlice)).to.not.equal(lastReasonableRandomNumber);
   });
 
 });
