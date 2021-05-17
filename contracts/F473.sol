@@ -609,6 +609,16 @@ contract F473 is ReentrancyGuard, Ownable
 		view
 		returns (uint256)
 	{
+		if (getCurrentLevel() == 12) {
+			return 0;
+		}
+
+		if (getCurrentLevel() == 0) {
+			// Handle intermission
+			uint256 levelNumber = getTimeSlice() % (NUM_LEVELS + NUM_INTERMISSION_LEVELS) + 1; 
+			return (SECONDS_PER_LEVEL * (NUM_LEVELS + NUM_INTERMISSION_LEVELS - (levelNumber - 1))) - ((block.timestamp - GAME_START) % SECONDS_PER_LEVEL);
+		}
+
 		return SECONDS_PER_LEVEL - ((block.timestamp - GAME_START) % SECONDS_PER_LEVEL);
 	}
 

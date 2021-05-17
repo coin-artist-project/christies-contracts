@@ -408,6 +408,11 @@ describe('F473', function () {
         // Verify that the event fired
         expect(eventPresent).to.equal(true);
       } else {
+        if (level > 9) {
+          let timeRemaining = await f473Contract.getLevelTimeRemaining();
+          expect(timeRemaining.toNumber()).to.be.lt(60 * 10 * (12 - level + 1));
+          expect(timeRemaining.toNumber()).to.be.gt(60 * 10 * (12 - level));
+        }
         await expectRevert(f473Contract.connect(acct1).claimSoloCard(0), (level <= 9) ? 'Can only claim solo cards' : 'Invalid index');
       }
 
@@ -1037,6 +1042,17 @@ describe('F473', function () {
   /**
    * Final sanity checks
    **/
+
+  it('Should allow replay token holder to replay game [yet again]', async function () {
+    // Make sure game is over
+    expect(await f473Contract.GAME_OVER()).to.equal(true);
+
+    await f473ReplayTokenContract.connect(acct2).burnAndRestart();
+    expect((await f473ReplayTokenContract.balanceOf(acct2.address, 1)).toNumber()).to.equal(2);
+
+    // Check that game is restarted
+    expect(await f473Contract.GAME_OVER()).to.equal(false);
+  });
 
   it('Ensure that we can get the time remaining ahead of the following level', async function () {
 
