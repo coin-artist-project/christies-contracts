@@ -270,7 +270,12 @@ describe('F473', function () {
     // Now review the event
     let eventPresent = false;
     for (const log of receipt.logs) {
-      let event = f473TokensContract.interface.parseLog(log);
+      let event;
+      try {
+        event = f473TokensContract.interface.parseLog(log);
+      } catch (_) {
+        continue;
+      }
 
       if (event.name === 'TransferSingle') {
         // Deconstruct the returned card
@@ -375,7 +380,12 @@ describe('F473', function () {
         // Now review the event
         let eventPresent = false;
         for (const log of receipt.logs) {
-          let event = f473TokensContract.interface.parseLog(log);
+          let event;
+          try {
+            event = f473TokensContract.interface.parseLog(log);
+          } catch (_) {
+            continue;
+          }
 
           if (event.name === 'TransferSingle') {
             // Deconstruct the returned card
@@ -491,7 +501,12 @@ describe('F473', function () {
     // Now review the events
     let eventsPresent = 0;
     for (const log of receipt.logs) {
-      let event = f473TokensContract.interface.parseLog(log);
+      let event;
+      try {
+        event = f473TokensContract.interface.parseLog(log);
+      } catch (_) {
+        continue;
+      }
 
       if (event.name === 'TransferSingle') {
         if (event.args.from === '0x0000000000000000000000000000000000000000') {
@@ -580,7 +595,12 @@ describe('F473', function () {
 
       // Now review the event
       for (const log of receipt.logs) {
-        let event = f473TokensContract.interface.parseLog(log);
+        let event;
+        try {
+          event = f473TokensContract.interface.parseLog(log);
+        } catch (_) {
+          continue;
+        }
 
         if (event.name === 'TransferSingle' && event.args.from === '0x0000000000000000000000000000000000000000') {
           // Make sure that the transfer event has everything expected of it - from, to, id, value
@@ -643,7 +663,12 @@ describe('F473', function () {
 
       // Now review the event
       for (const log of receipt.logs) {
-        let event = f473TokensContract.interface.parseLog(log);
+        let event;
+        try {
+          event = f473TokensContract.interface.parseLog(log);
+        } catch (_) {
+          continue;
+        }
 
         if (event.name === 'TransferSingle' && event.args.from === '0x0000000000000000000000000000000000000000') {
           // Make sure that the transfer event has everything expected of it - from, to, id, value
@@ -704,7 +729,17 @@ describe('F473', function () {
 
     // Send hearts
     await f473TokensContract.connect(owner).mintHearts(acct1.address, f473Contract.heartsRandom(0), 1, 10);
-    await f473Contract.connect(acct1).burnHearts(10);
+    let tx = await f473Contract.connect(acct1).burnHearts(10);
+    let receipt = await tx.wait();
+
+    // Check that decay event was emitted
+    let eventPresent = false;
+    for (const event of receipt.events) {
+      if (event.event === 'RandomNumberUpdated') {
+        eventPresent = true;
+      }
+    }
+    expect(eventPresent).to.equal(true);
 
     let newRandomRoll = (await f473Contract.getRandomNumber(timeSlice)).toString();
 
@@ -736,7 +771,12 @@ describe('F473', function () {
     // Now review the event
     let eventPresent = false;
     for (const log of receipt.logs) {
-      let event = f473TokensContract.interface.parseLog(log);
+      let event;
+      try {
+        event = f473TokensContract.interface.parseLog(log);
+      } catch (_) {
+        continue;
+      }
 
       if (event.name === 'TransferSingle' && event.args.from === '0x0000000000000000000000000000000000000000') {
         // Deconstruct the returned card
@@ -754,6 +794,16 @@ describe('F473', function () {
     }
 
     // Verify that the event fired
+    expect(eventPresent).to.equal(true);
+
+    // Check that decay event was emitted
+    eventPresent = false;
+    for (const event of receipt.events) {
+      if (event.event === 'HeartsBurned') {
+        expect(event.args.currentBurned).to.equal(0);
+        eventPresent = true;
+      }
+    }
     expect(eventPresent).to.equal(true);
 
     // Increase in decay rate
@@ -778,24 +828,78 @@ describe('F473', function () {
     await f473TokensContract.connect(owner).mintHearts(acct2.address, f473Contract.heartsRandom(0), 1, 100);
 
     // Submit all hearts needed
-    await f473Contract.connect(acct1).burnHearts(10);
+    let tx = await f473Contract.connect(acct1).burnHearts(10);
+    let receipt = await tx.wait();
     expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(9); // Decay rate of 1
 
-    await f473Contract.connect(acct2).burnHearts(10);
+    // Check that decay event was emitted
+    let eventPresent = false;
+    for (const event of receipt.events) {
+      if (event.event === 'HeartsBurned') {
+        expect(event.args.currentBurned).to.equal(9);
+        eventPresent = true;
+      }
+    }
+    expect(eventPresent).to.equal(true);
+
+    tx = await f473Contract.connect(acct2).burnHearts(10);
+    receipt = await tx.wait();
     expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(18); // Decay rate of 1
 
-    await f473Contract.connect(acct1).burnHearts(50);
+    // Check that decay event was emitted
+    eventPresent = false;
+    for (const event of receipt.events) {
+      if (event.event === 'HeartsBurned') {
+        expect(event.args.currentBurned).to.equal(18);
+        eventPresent = true;
+      }
+    }
+    expect(eventPresent).to.equal(true);
+
+    tx = await f473Contract.connect(acct1).burnHearts(50);
+    receipt = await tx.wait();
     expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(67); // Decay rate of 1
 
-    await f473Contract.connect(acct2).burnHearts(30);
+    // Check that decay event was emitted
+    eventPresent = false;
+    for (const event of receipt.events) {
+      if (event.event === 'HeartsBurned') {
+        expect(event.args.currentBurned).to.equal(67);
+        eventPresent = true;
+      }
+    }
+    expect(eventPresent).to.equal(true);
+
+    tx = await f473Contract.connect(acct2).burnHearts(30);
+    receipt = await tx.wait();
     expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(96); // Decay rate of 1
+
+    // Check that decay event was emitted
+    eventPresent = false;
+    for (const event of receipt.events) {
+      if (event.event === 'HeartsBurned') {
+        expect(event.args.currentBurned).to.equal(96);
+        eventPresent = true;
+      }
+    }
+    expect(eventPresent).to.equal(true);
 
     // Sanity check
     expect(await f473Contract.GAME_OVER()).to.equal(false);
 
     // End the game
-    await f473Contract.connect(acct1).burnHearts(7);
+    tx = await f473Contract.connect(acct1).burnHearts(7);
+    receipt = await tx.wait();
     expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(103); // Decay rate does not matter when game is over
+
+    // Check that decay event was emitted
+    eventPresent = false;
+    for (const event of receipt.events) {
+      if (event.event === 'GameOver') {
+        eventPresent = true;
+      }
+    }
+    expect(eventPresent).to.equal(true);
 
     // Game over state
     expect((await f473Contract.getCurrentLevel()).toNumber()).to.equal(12);

@@ -63,6 +63,11 @@ contract F473 is ReentrancyGuard, Ownable
 	mapping (uint256 => uint256) public randomNumbers;
 	uint256 lastRandomTimeSlice;
 
+	// Events
+	event HeartsBurned(uint256 currentBurned);
+	event RandomNumberUpdated();
+	event GameOver();
+
 	/**
 	 * Management
 	 */
@@ -193,6 +198,7 @@ contract F473 is ReentrancyGuard, Ownable
 			} else {
 				heartsBurned[timeSlice] = 0;
 			}
+			emit HeartsBurned(heartsBurned[timeSlice]);
 		}
 	}
 
@@ -485,12 +491,14 @@ contract F473 is ReentrancyGuard, Ownable
 		if (character > NUM_SOLO_CHAR + NUM_PAIR_CHAR) {
 			if (heartsBurned[timeSlice] >= NUM_HEARTS_LEVEL_NINE_COUPLE) {
 				GAME_OVER = true;
+				emit GameOver();
 			}
 		} else {
 			if (heartsBurned[timeSlice] >= NUM_HEARTS_LEVEL_NINE_OTHER) {
 				heartsBurned[timeSlice] = 0; // Back to original burned number
 				loveDecayRate[timeSlice] = 0; // Decay rate goes to 0 (in effect, 1)
 				updateRandomNumber(getTimeSlice()); // Change this level's random number, changes the card
+				emit RandomNumberUpdated();
 			}
 		}
 
