@@ -99,6 +99,14 @@ contract F473 is ReentrancyGuard, Ownable
 
 		// Set up the region lights
 		regionHearts = new uint256[](9);
+	}
+
+	function startGame()
+		public
+		onlyOwner
+	{
+		// Require that the game was never started before
+		require(GAME_VERSION == 0);
 
 		// Start the game for the first time
 		_restartGame();
@@ -153,6 +161,11 @@ contract F473 is ReentrancyGuard, Ownable
 
 	modifier onlyAllowedAddress() {
 		require(!REQUIRE_ALLOWLIST || allowedAddresses[_msgSender()] == true, "Address is not permitted");
+		_;
+	}
+
+	modifier gameStarted() {
+		require(GAME_VERSION > 0, "Game not started");
 		_;
 	}
 
@@ -215,6 +228,7 @@ contract F473 is ReentrancyGuard, Ownable
 	)
 		public
 		view
+		gameStarted
 		returns (bool)
 	{
 		return addressLastMove[GAME_VERSION][_addr] == (getTimeSlice() + 1);
@@ -278,6 +292,7 @@ contract F473 is ReentrancyGuard, Ownable
 	)
 		public
 		view
+		gameStarted
 		returns (uint256)
 	{
 		// Get the current random number & deck size right now
@@ -319,6 +334,7 @@ contract F473 is ReentrancyGuard, Ownable
 	 */
 	function roll()
 		public
+		gameStarted
 		onlyAllowedAddress
 		oneActionPerAddressPerTimeSlice
 		nextRandomNumber
@@ -331,6 +347,7 @@ contract F473 is ReentrancyGuard, Ownable
 		uint256 _index
 	)
 		public
+		gameStarted
 		onlyAllowedAddress
 		gameNotOver
 		oneActionPerAddressPerTimeSlice
@@ -351,6 +368,7 @@ contract F473 is ReentrancyGuard, Ownable
 		uint256 _index
 	)
 		public
+		gameStarted
 		onlyAllowedAddress
 		gameNotOver
 		oneActionPerAddressPerTimeSlice
@@ -384,6 +402,7 @@ contract F473 is ReentrancyGuard, Ownable
 		uint256 _cardId2
 	)
 		public
+		gameStarted
 		onlyAllowedAddress
 		gameNotOver
 		oneActionPerAddressPerTimeSlice
@@ -417,6 +436,7 @@ contract F473 is ReentrancyGuard, Ownable
 		uint256 _index
 	)
 		public
+		gameStarted
 		onlyAllowedAddress
 		gameNotOver
 		oneActionPerAddressPerTimeSlice
@@ -450,6 +470,7 @@ contract F473 is ReentrancyGuard, Ownable
 		uint256 _amount
 	)
 		public
+		gameStarted
 		nonReentrant
 		onlyAllowedAddress
 		gameNotOver
@@ -510,6 +531,7 @@ contract F473 is ReentrancyGuard, Ownable
 		uint256 _tokenId
 	)
 		public
+		gameStarted
 		nonReentrant
 		nextRandomNumber
 	{
@@ -546,6 +568,7 @@ contract F473 is ReentrancyGuard, Ownable
 
 	function restartGame()
 		public
+		gameStarted
 		onlyReplayToken
 	{
 		// If the prize is empty, bypass this check
@@ -564,6 +587,7 @@ contract F473 is ReentrancyGuard, Ownable
 	function getLights()
 		public
 		view
+		gameStarted
 		returns (uint256[] memory)
 	{
 		return regionHearts;
@@ -572,6 +596,7 @@ contract F473 is ReentrancyGuard, Ownable
 	function getLoveDecayRate()
 		public
 		view
+		gameStarted
 		returns (uint256)
 	{
 		uint256 timeSlice = getTimeSlice();
@@ -585,6 +610,7 @@ contract F473 is ReentrancyGuard, Ownable
 	function getLoveMeterSize()
 		public
 		view
+		gameStarted
 		returns (uint256)
 	{
 		uint256 timeSlice = getTimeSlice();
@@ -606,6 +632,7 @@ contract F473 is ReentrancyGuard, Ownable
 	function getLoveMeterFilled()
 		public
 		view
+		gameStarted
 		returns (uint256)
 	{
 		return heartsBurned[getTimeSlice()];
@@ -614,6 +641,7 @@ contract F473 is ReentrancyGuard, Ownable
 	function getTimeSlice()
 		public
 		view
+		gameStarted
 		returns (uint256)
 	{
 		return (block.timestamp - GAME_START) / SECONDS_PER_LEVEL;
@@ -622,6 +650,7 @@ contract F473 is ReentrancyGuard, Ownable
 	function getLevelTimeRemaining()
 		public
 		view
+		gameStarted
 		returns (uint256)
 	{
 		if (getCurrentLevel() == 12) {
@@ -642,6 +671,7 @@ contract F473 is ReentrancyGuard, Ownable
 	)
 		public
 		view
+		gameStarted
 		returns (uint256)
 	{
 		uint256 _localLastRandomTimeSlice = _timeSlice;
@@ -668,6 +698,7 @@ contract F473 is ReentrancyGuard, Ownable
 	)
 		public
 		view
+		gameStarted
 		returns (uint256)
 	{
 		if (GAME_OVER) {
@@ -687,6 +718,7 @@ contract F473 is ReentrancyGuard, Ownable
 	)
 		public
 		view
+		gameStarted
 		returns (uint256)
 	{
 		if (GAME_OVER) {
@@ -706,6 +738,7 @@ contract F473 is ReentrancyGuard, Ownable
 	)
 		public
 		view
+		gameStarted
 		returns (uint256)
 	{
 		uint256 phase = getPhase(_timeSlice);
@@ -724,6 +757,7 @@ contract F473 is ReentrancyGuard, Ownable
 	)
 		public
 		view
+		gameStarted
 		returns (uint256)
 	{
 		uint256 phase = getPhase(_timeSlice);
@@ -747,6 +781,7 @@ contract F473 is ReentrancyGuard, Ownable
 	)
 		public
 		view
+		gameStarted
 		validTimeSlice(_timeSlice)
 		validIndex(_timeSlice, _index)
 		returns (uint256)
@@ -760,6 +795,7 @@ contract F473 is ReentrancyGuard, Ownable
 	)
 		public
 		view
+		gameStarted
 		validTimeSlice(_timeSlice)
 		returns (uint256[] memory)
 	{
@@ -801,6 +837,7 @@ contract F473 is ReentrancyGuard, Ownable
 	)
 		public
 		view
+		gameStarted
 		validTimeSlice(_timeSlice)
 		returns (uint256[] memory)
 	{
@@ -843,18 +880,13 @@ contract F473 is ReentrancyGuard, Ownable
 	)
 		public
 		view
+		gameStarted
 		validTimeSlice(_timeSlice)
 		returns (uint256[] memory)
 	{
-		uint256 level = getLevel(_timeSlice);
-		if (level == 0 || level == 12) {
-			return new uint256[](9);
-		}
-
 		// Draw unique cards from the batch
-		uint256 lastIndex = NUM_LEVELS - level;
 		uint256[] memory cardBackgrounds = new uint256[](9);
-		for (uint256 iter; iter <= lastIndex; iter++) {
+		for (uint256 iter; iter <= 8; iter++) {
 			cardBackgrounds[iter] = getCardBackground(_timeSlice, iter);
 		}
 
@@ -867,8 +899,8 @@ contract F473 is ReentrancyGuard, Ownable
 	)
 		public
 		view
+		gameStarted
 		validTimeSlice(_timeSlice)
-		validIndex(_timeSlice, _index)
 		returns (uint256)
 	{
 		// Get the current random number & deck size right now
@@ -882,6 +914,7 @@ contract F473 is ReentrancyGuard, Ownable
 	)
 		public
 		view
+		gameStarted
 		validTimeSlice(_timeSlice)
 		returns (uint256)
 	{
@@ -910,6 +943,7 @@ contract F473 is ReentrancyGuard, Ownable
 	function getCurrentLevel()
 		public
 		view
+		gameStarted
 		returns (uint256)
 	{
 		return getLevel(
@@ -920,6 +954,7 @@ contract F473 is ReentrancyGuard, Ownable
 	function getCurrentPhase()
 		public
 		view
+		gameStarted
 		returns (uint256)
 	{
 		return getPhase(
@@ -932,6 +967,7 @@ contract F473 is ReentrancyGuard, Ownable
 	)
 		public
 		view
+		gameStarted
 		returns (uint256)
 	{
 		return getCardCharacter(
@@ -945,6 +981,7 @@ contract F473 is ReentrancyGuard, Ownable
 	)
 		public
 		view
+		gameStarted
 		returns (uint256)
 	{
 		return getCardBackground(
@@ -956,6 +993,7 @@ contract F473 is ReentrancyGuard, Ownable
 	function getCurrentCardAudio()
 		public
 		view
+		gameStarted
 		returns (uint256)
 	{
 		return getLevelAudio(
@@ -966,6 +1004,7 @@ contract F473 is ReentrancyGuard, Ownable
 	function getCurrentCardCharacters()
 		public
 		view
+		gameStarted
 		returns (uint256[] memory)
 	{
 		return getCardCharacters(
@@ -976,6 +1015,7 @@ contract F473 is ReentrancyGuard, Ownable
 	function getCurrentCardBackgrounds()
 		public
 		view
+		gameStarted
 		returns (uint256[] memory)
 	{
 		return getCardBackgrounds(
@@ -986,6 +1026,7 @@ contract F473 is ReentrancyGuard, Ownable
 	function getCurrentCardCharacterPositions()
 		public
 		view
+		gameStarted
 		returns (uint256[] memory)
 	{
 		return getCardCharacterPositions(
@@ -996,6 +1037,7 @@ contract F473 is ReentrancyGuard, Ownable
 	function getGameState()
 		public
 		view
+		gameStarted
 		returns (
 			uint256 timeSlice,
 			uint256 level,

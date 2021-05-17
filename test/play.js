@@ -71,6 +71,15 @@ describe('F473', function () {
     NUM_BACKGROUNDS  = (await f473TokensContract.NUM_BACKGROUNDS()).toNumber();
   });
 
+  it('Disallows doing anything if the game is not started', async function () {
+    await expectRevert(f473Contract.getGameState(), 'Game not started');
+  });
+
+  it('Only allow starting the game once', async function () {
+    await f473Contract.startGame();
+    await expectRevert.unspecified(f473Contract.startGame());
+  });
+
   it('URI should return as expected', async function () {
     let response = await f473TokensContract.uri(0);
     expect(response).to.equal("https://localhost/{uri}.json");
@@ -1050,7 +1059,7 @@ describe('F473', function () {
     }
   });
 
-  it('Should not allow a non-heart token to change the color of the lights', async function () {
+  it('Test enumaration of assets', async function () {
     // Enumerate
     let tokens = await f473TokensContract.getAccountTokensFormatted(acct1.address, 0, 100);
 
