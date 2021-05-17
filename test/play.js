@@ -55,7 +55,8 @@ describe('F473', function () {
     f473Contract = await F473.deploy(
       f473TokensContract.address,
       f473ReplayTokenContract.address,
-      puzzleAcct3.address
+      puzzleAcct3.address,
+      600
     );
 
     await f473TokensContract.setGameAddress(f473Contract.address);
@@ -773,8 +774,8 @@ describe('F473', function () {
     expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(0);
 
     // Provide the hearts needed from the owner
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, f473Contract.heartsRandom(0), version, 100);
-    await f473TokensContract.connect(owner).mintHearts(acct2.address, f473Contract.heartsRandom(0), version, 100);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, f473Contract.heartsRandom(0), 1, 100);
+    await f473TokensContract.connect(owner).mintHearts(acct2.address, f473Contract.heartsRandom(0), 1, 100);
 
     // Submit all hearts needed
     await f473Contract.connect(acct1).burnHearts(10);
@@ -979,6 +980,22 @@ describe('F473', function () {
   });
 
   it('Should NOT allow regular players to restart the game using hearts', async function () {
+    // Mint all hearts
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 1, 1, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 2, 1, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 3, 1, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 4, 1, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 5, 1, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 6, 1, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 7, 1, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 1, 2, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 2, 2, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 3, 2, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 4, 2, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 5, 2, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 6, 2, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 7, 2, 2);
+
     // Set all of the lights to the restart pattern
     await f473Contract.connect(acct1).burnHeartLightRegion(0, 0x210001);
     await f473Contract.connect(acct1).burnHeartLightRegion(1, 0x110002);
@@ -1017,6 +1034,22 @@ describe('F473', function () {
   it('Allow players to beat the game [again x3]', beatTheGame.bind(this, 4));
 
   it('Should NOT allow regular players to restart the game using hearts [again]', async function () {
+    // Mint all hearts
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 1, 1, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 2, 1, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 3, 1, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 4, 1, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 5, 1, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 6, 1, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 7, 1, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 1, 2, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 2, 2, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 3, 2, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 4, 2, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 5, 2, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 6, 2, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 7, 2, 2);
+
     // Set all of the lights to the restart pattern
     await f473Contract.connect(acct1).burnHeartLightRegion(0, 0x210001);
     await f473Contract.connect(acct1).burnHeartLightRegion(1, 0x110002);

@@ -34,7 +34,8 @@ async function main() {
   const f473Contract = await F473.deploy(
     f473TokensContract.address,
     f473ReplayTokenContract.address,
-    PUZZLE_PRIZE_ADDRESS
+    PUZZLE_PRIZE_ADDRESS,
+    600 // 600 in production
   );
 
   await f473TokensContract.setGameAddress(f473Contract.address);

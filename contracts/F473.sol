@@ -43,7 +43,7 @@ contract F473 is ReentrancyGuard, Ownable
 	uint256 constant NUM_LEVELS = 9;
 	uint256 constant LEVELS_PER_PHASE = 3;
 	uint256 constant NUM_INTERMISSION_LEVELS = 3;
-	uint256 constant SECONDS_PER_LEVEL = 10 minutes;
+	uint256 SECONDS_PER_LEVEL = 10 minutes; // Has override in constructor
 
 	// Game Board Config
 	uint256 constant TOTAL_CARD_SLOTS = 9;
@@ -70,14 +70,16 @@ contract F473 is ReentrancyGuard, Ownable
 	constructor(
 		address payable _f473TokensAddress,
 		address _f473ReplayTokensAddress,
-		address _puzzlePrizeAddress
+		address _puzzlePrizeAddress,
+		uint256 _secondsPerLevel
 	)
 		Ownable()
 	{
-		// Set the F473 Tokens Contract
+		// Set the F473 Tokens Contract, addresses, and config
 		f473tokensContract = F473Tokens(_f473TokensAddress);
 		F473_REPLAY_ADDRESS = _f473ReplayTokensAddress;
 		PUZZLE_PRIZE_ADDRESS = _puzzlePrizeAddress;
+		SECONDS_PER_LEVEL = _secondsPerLevel;
 
 		// Get all the config values
 		NUM_SOLO_CHAR     = f473tokensContract.NUM_SOLO_CHAR();
@@ -423,7 +425,10 @@ contract F473 is ReentrancyGuard, Ownable
 		uint256 selectedCharacter = getCurrentCardCharacter(_index);
 		require(selectedCharacter > NUM_SOLO_CHAR + NUM_PAIR_CHAR && selectedCharacter <= (NUM_SOLO_CHAR + NUM_PAIR_CHAR + NUM_COUPLE_CHAR), "Can only claim couple cards");
 
-		// Trade in the cards NOTE TO SELF THIS MIGHT BLOW UP IF WE'RE NOT CATCHING REQUIRE FAILURES
+		// Verify that the card submitted is a character card
+		require(f473tokensContract.isCharacter(_cardId1), "Only characters");
+
+		// Trade in the cards
 		f473tokensContract.burn(_msgSender(), _cardId1, 1);
 
 		// Mint card
@@ -453,16 +458,18 @@ contract F473 is ReentrancyGuard, Ownable
 		// Find any available to burn
 		address from = _msgSender();
 		uint256 amountLeftToBurn = _amount;
-		for (uint256 idx = 0; idx < NUM_HEARTS_COLORS; idx++) {
-			uint256 heartsId = heartsRandom(idx);
-			uint256 balance = f473tokensContract.balanceOf(from, (GAME_VERSION << f473tokensContract.VERSION_BITSHIFT()) + f473tokensContract.HEARTS_ID() + heartsId);
+		for (uint256 versionIdx = GAME_VERSION; versionIdx >= 1; versionIdx--) {
+			for (uint256 idx = 0; idx < NUM_HEARTS_COLORS; idx++) {
+				uint256 heartsId = heartsRandom(idx);
+				uint256 balance = f473tokensContract.balanceOf(from, (versionIdx << f473tokensContract.VERSION_BITSHIFT()) + f473tokensContract.HEARTS_ID() + heartsId);
 
-			if (balance > 0 && balance < amountLeftToBurn) {
-				f473tokensContract.burn(from, (GAME_VERSION << f473tokensContract.VERSION_BITSHIFT()) + f473tokensContract.HEARTS_ID() + heartsId, balance);
-				amountLeftToBurn -= balance;
-			} else if (balance > 0 && balance >= amountLeftToBurn) {
-				f473tokensContract.burn(from, (GAME_VERSION << f473tokensContract.VERSION_BITSHIFT()) + f473tokensContract.HEARTS_ID() + heartsId, amountLeftToBurn);
-				amountLeftToBurn = 0;
+				if (balance > 0 && balance < amountLeftToBurn) {
+					f473tokensContract.burn(from, (versionIdx << f473tokensContract.VERSION_BITSHIFT()) + f473tokensContract.HEARTS_ID() + heartsId, balance);
+					amountLeftToBurn -= balance;
+				} else if (balance > 0 && balance >= amountLeftToBurn) {
+					f473tokensContract.burn(from, (versionIdx << f473tokensContract.VERSION_BITSHIFT()) + f473tokensContract.HEARTS_ID() + heartsId, amountLeftToBurn);
+					amountLeftToBurn = 0;
+				}
 			}
 		}
 

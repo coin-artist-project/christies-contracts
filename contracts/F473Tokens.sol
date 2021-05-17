@@ -159,6 +159,26 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 		version    = (_cardId & VERSION_BITMASK) >> VERSION_BITSHIFT;
 	}
 
+	function isHeart(
+		uint256 _cardId
+	)
+		public
+		pure
+		returns (bool)
+	{
+		return (_cardId & HEARTS_ID) == HEARTS_ID;
+	}
+
+	function isCharacter(
+		uint256 _cardId
+	)
+		public
+		pure
+		returns (bool)
+	{
+		return !isHeart(_cardId);
+	}
+
 	function getAccountTokensFormatted(
 		address account,
 		uint256 cursor,
