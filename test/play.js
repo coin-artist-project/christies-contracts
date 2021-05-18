@@ -1231,7 +1231,7 @@ describe('F473', function () {
     let lastTsRandomNumber;
     for (let idx = 0; idx < timeSlice + 3; idx++) {
       let thisRandomNumber = await f473Contract.getRandomNumber(idx);
-      let tsRandomNumber = await f473Contract.randomNumbers(idx);
+      let tsRandomNumber = await f473Contract.randomNumbers(4, idx); // On version four
 
       if (tsRandomNumber.toString() !== '0') {
         lastTsRandomNumber = tsRandomNumber;
