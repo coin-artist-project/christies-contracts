@@ -33,11 +33,13 @@ contract F473 is ReentrancyGuard, Ownable
 	uint256 public   heartsMinted;
 
 	// Winning the game
-	uint256 constant NUM_HEARTS_LEVEL_NINE_COUPLE = 100;
-	uint256 constant NUM_HEARTS_LEVEL_NINE_OTHER = 10;
+	uint256 NUM_HEARTS_LEVEL_NINE_COUPLE = 100;
+	uint256 NUM_HEARTS_LEVEL_NINE_OTHER = 10;
+	uint256 constant SECONDS_PER_HEART_DECAY = 10;
 	mapping(uint256 => uint256) couplesClaimed;
 	mapping(uint256 => uint256) heartsBurned;
 	mapping(uint256 => uint256) loveDecayRate;
+	mapping(uint256 => uint256) lastRandomSwitchDuration;
 
 	// Game Config
 	uint256 constant NUM_LEVELS = 9;
@@ -76,7 +78,9 @@ contract F473 is ReentrancyGuard, Ownable
 		address payable _f473TokensAddress,
 		address _f473ReplayTokensAddress,
 		address _puzzlePrizeAddress,
-		uint256 _secondsPerLevel
+		uint256 _secondsPerLevel,
+		uint256 _numHeartsLevelNineCouple,
+		uint256 _numHeartsLevelNineOther
 	)
 		Ownable()
 	{
@@ -85,6 +89,8 @@ contract F473 is ReentrancyGuard, Ownable
 		F473_REPLAY_ADDRESS = _f473ReplayTokensAddress;
 		PUZZLE_PRIZE_ADDRESS = _puzzlePrizeAddress;
 		SECONDS_PER_LEVEL = _secondsPerLevel;
+		NUM_HEARTS_LEVEL_NINE_COUPLE = _numHeartsLevelNineCouple;
+		NUM_HEARTS_LEVEL_NINE_OTHER = _numHeartsLevelNineOther;
 
 		// Get all the config values
 		NUM_SOLO_CHAR     = f473tokensContract.NUM_SOLO_CHAR();
@@ -198,21 +204,6 @@ contract F473 is ReentrancyGuard, Ownable
 		// we don't want a reorg to happen on blocks right before the slice turnover
 		lastRandomTimeSlice = getTimeSlice() + 2;
 		updateRandomNumber(lastRandomTimeSlice);
-	}
-
-	modifier decayHeartsBurned() {
-		// Do everything else first
-		_;
-
-		uint256 timeSlice = getTimeSlice();
-		if (!GAME_OVER && getLevel(timeSlice) == 9) {
-			if (heartsBurned[timeSlice] > (loveDecayRate[timeSlice] + 1)) {
-				heartsBurned[timeSlice] -= (loveDecayRate[timeSlice] + 1);
-			} else {
-				heartsBurned[timeSlice] = 0;
-			}
-			emit HeartsBurned(heartsBurned[timeSlice]);
-		}
 	}
 
 	modifier oneActionPerAddressPerTimeSlice() {
@@ -338,7 +329,6 @@ contract F473 is ReentrancyGuard, Ownable
 		onlyAllowedAddress
 		oneActionPerAddressPerTimeSlice
 		nextRandomNumber
-		decayHeartsBurned
 	{
 		// Doesn't do anything else, forces a random roll change, but acts as a turn
 	}
@@ -352,7 +342,6 @@ contract F473 is ReentrancyGuard, Ownable
 		gameNotOver
 		oneActionPerAddressPerTimeSlice
 		nextRandomNumber
-		decayHeartsBurned
 	{
 		// Determine whether this card is permissible to be claimed
 		// Look up the token ID based on the index & game state
@@ -373,7 +362,6 @@ contract F473 is ReentrancyGuard, Ownable
 		gameNotOver
 		oneActionPerAddressPerTimeSlice
 		nextRandomNumber
-		decayHeartsBurned
 	{
 		// Determine whether this card is permissible to be claimed
 		// Look up the token ID based on the index & game state
@@ -407,7 +395,6 @@ contract F473 is ReentrancyGuard, Ownable
 		gameNotOver
 		oneActionPerAddressPerTimeSlice
 		nextRandomNumber
-		decayHeartsBurned
 	{
 		// Require that one of the owners are the sender
 		require(_msgSender() == _cardId1Owner || _msgSender() == _cardId2Owner, "Caller must own at least one card");
@@ -441,7 +428,6 @@ contract F473 is ReentrancyGuard, Ownable
 		gameNotOver
 		oneActionPerAddressPerTimeSlice
 		nextRandomNumber
-		decayHeartsBurned
 	{
 		// Make sure we're at the last level
 		uint256 timeSlice = getTimeSlice();
@@ -475,7 +461,6 @@ contract F473 is ReentrancyGuard, Ownable
 		onlyAllowedAddress
 		gameNotOver
 		nextRandomNumber
-		decayHeartsBurned
 		returns (bool)
 	{
 		// Make sure we're at the last level
@@ -510,18 +495,22 @@ contract F473 is ReentrancyGuard, Ownable
 
 		// Character card is a couple card
 		if (character > NUM_SOLO_CHAR + NUM_PAIR_CHAR) {
-			if (heartsBurned[timeSlice] >= NUM_HEARTS_LEVEL_NINE_COUPLE) {
+			if (getLoveMeterFilled() >= getLoveMeterSize()) {
 				GAME_OVER = true;
 				emit GameOver();
 			}
 		} else {
-			if (heartsBurned[timeSlice] >= NUM_HEARTS_LEVEL_NINE_OTHER) {
+			if (getLoveMeterFilled() >= getLoveMeterSize()) {
 				heartsBurned[timeSlice] = 0; // Back to original burned number
 				loveDecayRate[timeSlice] = 0; // Decay rate goes to 0 (in effect, 1)
 				updateRandomNumber(getTimeSlice()); // Change this level's random number, changes the card
+				lastRandomSwitchDuration[getTimeSlice()] = (block.timestamp - GAME_START) % SECONDS_PER_LEVEL;
 				emit RandomNumberUpdated();
 			}
 		}
+
+		// Emit event
+		emit HeartsBurned(getLoveMeterFilled());
 
 		return GAME_OVER;
 	}
@@ -635,7 +624,29 @@ contract F473 is ReentrancyGuard, Ownable
 		gameStarted
 		returns (uint256)
 	{
-		return heartsBurned[getTimeSlice()];
+		uint256 timeSlice = getTimeSlice();
+		uint256 decay = getCurrentHeartsDecayed();
+		if (decay > heartsBurned[timeSlice]) {
+			return 0;
+		}
+
+		return heartsBurned[timeSlice] - decay;
+	}
+
+	function getCurrentHeartsDecayed()
+		public
+		view
+		gameStarted
+		returns (uint256)
+	{
+		if (getCurrentLevel() != 9) {
+			return 0;
+		}
+
+		uint256 timeSlice = getTimeSlice();
+		uint256 timeSpentInSlice = ((block.timestamp - GAME_START) % SECONDS_PER_LEVEL);
+		uint256 secondsAfterLastSwitch = (timeSpentInSlice > lastRandomSwitchDuration[timeSlice]) ? timeSpentInSlice - lastRandomSwitchDuration[timeSlice] : 0;
+		return (secondsAfterLastSwitch / SECONDS_PER_HEART_DECAY) * getLoveDecayRate();
 	}
 
 	function getTimeSlice()

@@ -11,6 +11,11 @@ const { ethers } = require('hardhat');
 const PUZZLE_PRIZE_ADDRESS = '0x90f79bf6eb2c4f870365e785982e1f101e93b906';
 
 
+const TIME_SLICE_TIME = 60 * 2;
+const NUM_HEARTS_LEVEL_NINE_COUPLE = 100;
+const NUM_HEARTS_LEVEL_NINE_OTHER = 10;
+
+
 async function main() {
   // Check the address of the sender
   const [deployer] = await ethers.getSigners();
@@ -35,7 +40,9 @@ async function main() {
     f473TokensContract.address,
     f473ReplayTokenContract.address,
     PUZZLE_PRIZE_ADDRESS,
-    600 // 600 in production
+    TIME_SLICE_TIME,
+    NUM_HEARTS_LEVEL_NINE_COUPLE,
+    NUM_HEARTS_LEVEL_NINE_OTHER
   );
 
   await f473TokensContract.setGameAddress(f473Contract.address);

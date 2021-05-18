@@ -26,18 +26,24 @@ describe('F473', function () {
   let NUM_COUPLE_AUDIO;
   let NUM_BACKGROUNDS;
 
+  const TIME_SLICE_TIME = 60 * 10;
+  const NUM_HEARTS_LEVEL_NINE_COUPLE = 100;
+  const NUM_HEARTS_LEVEL_NINE_OTHER = 10;
+
+  const HEARTS_TIME_BUFFER = 100;
+
   async function forwardToNextLevel9() {
     let sanityLimit = 0;
 
-    ethers.provider.send("evm_increaseTime", [60 * 10]);
+    ethers.provider.send("evm_increaseTime", [TIME_SLICE_TIME]);
     ethers.provider.send("evm_mine");
 
     do {
       await f473Contract.connect(acct1).roll();
-      ethers.provider.send("evm_increaseTime", [60 * 10]);
+      ethers.provider.send("evm_increaseTime", [TIME_SLICE_TIME]);
       ethers.provider.send("evm_mine");
     }
-    while ((await f473Contract.getCurrentLevel()).toNumber() !== 9 && sanityLimit++ < 20);
+    while ((await f473Contract.getCurrentLevel()).toNumber() !== 9 && sanityLimit++ < 50);
 
     expect((await f473Contract.getCurrentLevel()).toNumber()).to.equal(9);
   }
@@ -56,7 +62,9 @@ describe('F473', function () {
       f473TokensContract.address,
       f473ReplayTokenContract.address,
       puzzleAcct3.address,
-      600
+      TIME_SLICE_TIME,
+      NUM_HEARTS_LEVEL_NINE_COUPLE,
+      NUM_HEARTS_LEVEL_NINE_OTHER
     );
 
     await f473TokensContract.setGameAddress(f473Contract.address);
@@ -229,7 +237,7 @@ describe('F473', function () {
 
       //console.log("level:", level, "- phase:", phase, "- time slice:", iter);
 
-      ethers.provider.send("evm_increaseTime", [60 * 10]); // Increase by 10 minutes
+      ethers.provider.send("evm_increaseTime", [TIME_SLICE_TIME]); // Increase by 10 minutes
       ethers.provider.send("evm_mine");
 
       // Do some work, but not in the last block since we're going to do something else after
@@ -336,7 +344,7 @@ describe('F473', function () {
       }
 
       // Go to the next level
-      ethers.provider.send("evm_increaseTime", [60 * 10]); // Increase by 10 minutes
+      ethers.provider.send("evm_increaseTime", [TIME_SLICE_TIME]); // Increase by 10 minutes
       ethers.provider.send("evm_mine");
     }
   });
@@ -430,14 +438,14 @@ describe('F473', function () {
       } else {
         if (level > 9) {
           let timeRemaining = await f473Contract.getLevelTimeRemaining();
-          expect(timeRemaining.toNumber()).to.be.lt(60 * 10 * (12 - level + 1));
-          expect(timeRemaining.toNumber()).to.be.gt(60 * 10 * (12 - level));
+          expect(timeRemaining.toNumber()).to.be.lt(TIME_SLICE_TIME * (12 - level + 1));
+          expect(timeRemaining.toNumber()).to.be.gt(TIME_SLICE_TIME * (12 - level));
         }
         await expectRevert(f473Contract.connect(acct1).claimSoloCard(0), (level <= 9) ? 'Can only claim solo cards' : 'Invalid index');
       }
 
       // Go to the next level
-      ethers.provider.send("evm_increaseTime", [60 * 10]); // Increase by 10 minutes
+      ethers.provider.send("evm_increaseTime", [TIME_SLICE_TIME]); // Increase by 10 minutes
       ethers.provider.send("evm_mine");
     }
   });
@@ -466,14 +474,14 @@ describe('F473', function () {
       await f473Contract.connect(acct1).roll();
 
       // Go to the next level
-      ethers.provider.send("evm_increaseTime", [60 * 10]); // Increase by 10 minutes
+      ethers.provider.send("evm_increaseTime", [TIME_SLICE_TIME]); // Increase by 10 minutes
       ethers.provider.send("evm_mine");
     }
   });
 
   it('Should allow account to trade in two solos for a pair card', async function () {
     // Go to the level before paired cards show up
-    ethers.provider.send("evm_increaseTime", [60 * 10 * 2]); // Increase to Level 3, we'll jump to level 4
+    ethers.provider.send("evm_increaseTime", [TIME_SLICE_TIME * 2]); // Increase to Level 3, we'll jump to level 4
     ethers.provider.send("evm_mine");
 
     let level = await f473Contract.getCurrentLevel();
@@ -483,7 +491,7 @@ describe('F473', function () {
     let pairedIndex, selectedCard;
     do {
       await f473Contract.connect(acct1).roll();
-      ethers.provider.send("evm_increaseTime", [60 * 10]);
+      ethers.provider.send("evm_increaseTime", [TIME_SLICE_TIME]);
       ethers.provider.send("evm_mine");
 
       // Check the cards
@@ -576,7 +584,7 @@ describe('F473', function () {
   });
 
   it('Disallow acct2 to send two of the same pair card to claim hearts', async function () {
-    ethers.provider.send("evm_increaseTime", [60 * 10]);
+    ethers.provider.send("evm_increaseTime", [TIME_SLICE_TIME]);
     ethers.provider.send("evm_mine");
     let id1 = await f473TokensContract.constructCardManual(46, 1, 2, 1);
     await expectRevert(f473Contract.connect(acct2).tradeForHearts(acct2.address, id1, acct2.address, id1), 'Not a pair');
@@ -587,7 +595,7 @@ describe('F473', function () {
 
     let alternatingCase = 0;
     for (let charIdx = NUM_SOLO + 1; charIdx <= NUM_PAIR + NUM_SOLO; charIdx += 2) {
-      ethers.provider.send("evm_increaseTime", [60 * 10]);
+      ethers.provider.send("evm_increaseTime", [TIME_SLICE_TIME]);
       ethers.provider.send("evm_mine");
 
       let id1CharIdx = charIdx;
@@ -643,7 +651,7 @@ describe('F473', function () {
   });
 
   it('Disallow acct2 to send two of acct1 pairs to get hearts', async function () {
-    ethers.provider.send("evm_increaseTime", [60 * 10]);
+    ethers.provider.send("evm_increaseTime", [TIME_SLICE_TIME]);
     ethers.provider.send("evm_mine");
     let id1 = await f473TokensContract.constructCardManual(46, 1, 2, 1);
     let id2 = await f473TokensContract.constructCardManual(46+1, 1, 2, 1);
@@ -651,7 +659,7 @@ describe('F473', function () {
   });
 
   it('Disallow acct2 to send two non-matching pairs to get hearts', async function () {
-    ethers.provider.send("evm_increaseTime", [60 * 10]);
+    ethers.provider.send("evm_increaseTime", [TIME_SLICE_TIME]);
     ethers.provider.send("evm_mine");
     let id1 = await f473TokensContract.constructCardManual(46, 1, 2, 1);
     let id2 = await f473TokensContract.constructCardManual(46+2, 1, 2, 1);
@@ -662,7 +670,7 @@ describe('F473', function () {
     let eventPresent = false;
 
     for (let charIdx = NUM_SOLO + 1; charIdx <= NUM_PAIR + NUM_SOLO; charIdx += 2) {
-      ethers.provider.send("evm_increaseTime", [60 * 10]);
+      ethers.provider.send("evm_increaseTime", [TIME_SLICE_TIME]);
       ethers.provider.send("evm_mine");
 
       let id1 = await f473TokensContract.constructCardManual(charIdx, 1, 2, 1);
@@ -729,7 +737,7 @@ describe('F473', function () {
     expect((await f473Contract.getCurrentLevel()).toNumber()).to.equal(9);
     expect((await f473Contract.getCurrentCardCharacter(0)).toNumber()).to.be.lte(NUM_SOLO + NUM_PAIR);
     expect((await f473Contract.getLoveDecayRate()).toNumber()).to.equal(1);
-    expect((await f473Contract.getLoveMeterSize()).toNumber()).to.equal(10);
+    expect((await f473Contract.getLoveMeterSize()).toNumber()).to.equal(NUM_HEARTS_LEVEL_NINE_OTHER);
     expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(0);
 
     // Get the current random roll
@@ -737,8 +745,8 @@ describe('F473', function () {
     let randomRoll = (await f473Contract.getRandomNumber(timeSlice)).toString();
 
     // Send hearts
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, f473Contract.heartsRandom(0), 1, 10);
-    let tx = await f473Contract.connect(acct1).burnHearts(10);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, f473Contract.heartsRandom(0), 1, NUM_HEARTS_LEVEL_NINE_OTHER + HEARTS_TIME_BUFFER);
+    let tx = await f473Contract.connect(acct1).burnHearts(NUM_HEARTS_LEVEL_NINE_OTHER + HEARTS_TIME_BUFFER);
     let receipt = await tx.wait();
 
     // Check that decay event was emitted
@@ -768,7 +776,7 @@ describe('F473', function () {
     expect((await f473Contract.getCurrentLevel()).toNumber()).to.equal(9);
     expect((await f473Contract.getCurrentCardCharacter(0)).toNumber()).to.be.gt(NUM_SOLO + NUM_PAIR);
     expect((await f473Contract.getLoveDecayRate()).toNumber()).to.equal(1);
-    expect((await f473Contract.getLoveMeterSize()).toNumber()).to.equal(100);
+    expect((await f473Contract.getLoveMeterSize()).toNumber()).to.equal(NUM_HEARTS_LEVEL_NINE_COUPLE);
 
     // Get current character
     let currentCharacter = await f473Contract.getCurrentCardCharacter(0);
@@ -805,19 +813,9 @@ describe('F473', function () {
     // Verify that the event fired
     expect(eventPresent).to.equal(true);
 
-    // Check that decay event was emitted
-    eventPresent = false;
-    for (const event of receipt.events) {
-      if (event.event === 'HeartsBurned') {
-        expect(event.args.currentBurned).to.equal(0);
-        eventPresent = true;
-      }
-    }
-    expect(eventPresent).to.equal(true);
-
     // Increase in decay rate
     expect((await f473Contract.getLoveDecayRate()).toNumber()).to.equal(2);
-    expect((await f473Contract.getLoveMeterSize()).toNumber()).to.equal(100);
+    expect((await f473Contract.getLoveMeterSize()).toNumber()).to.equal(NUM_HEARTS_LEVEL_NINE_COUPLE);
   });
 
   async function beatTheGame(version = 1) {
@@ -829,23 +827,27 @@ describe('F473', function () {
     expect((await f473Contract.getCurrentLevel()).toNumber()).to.equal(9);
     expect((await f473Contract.getCurrentCardCharacter(0)).toNumber()).to.be.gt(NUM_SOLO + NUM_PAIR);
     expect((await f473Contract.getLoveDecayRate()).toNumber()).to.equal(1);
-    expect((await f473Contract.getLoveMeterSize()).toNumber()).to.equal(100);
+    expect((await f473Contract.getLoveMeterSize()).toNumber()).to.equal(NUM_HEARTS_LEVEL_NINE_COUPLE);
     expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(0);
 
     // Provide the hearts needed from the owner
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, f473Contract.heartsRandom(0), 1, 100);
-    await f473TokensContract.connect(owner).mintHearts(acct2.address, f473Contract.heartsRandom(0), 1, 100);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, f473Contract.heartsRandom(0), 1, NUM_HEARTS_LEVEL_NINE_COUPLE + HEARTS_TIME_BUFFER);
+    await f473TokensContract.connect(owner).mintHearts(acct2.address, f473Contract.heartsRandom(0), 1, NUM_HEARTS_LEVEL_NINE_COUPLE + HEARTS_TIME_BUFFER);
 
     // Submit all hearts needed
     let tx = await f473Contract.connect(acct1).burnHearts(10);
     let receipt = await tx.wait();
-    expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(9); // Decay rate of 1
+    let size = await f473Contract.getLoveMeterSize();
+    let filled = await f473Contract.getLoveMeterFilled();
+    let decayed = await f473Contract.getCurrentHeartsDecayed();
+    //console.log(size.toNumber(), filled.toNumber(), decayed.toNumber());
+    expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(Math.max(0, 10 - decayed));
 
     // Check that decay event was emitted
     let eventPresent = false;
     for (const event of receipt.events) {
       if (event.event === 'HeartsBurned') {
-        expect(event.args.currentBurned).to.equal(9);
+        expect(event.args.currentBurned).to.equal(Math.max(0, 10 - decayed));
         eventPresent = true;
       }
     }
@@ -853,13 +855,14 @@ describe('F473', function () {
 
     tx = await f473Contract.connect(acct2).burnHearts(10);
     receipt = await tx.wait();
-    expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(18); // Decay rate of 1
+    decayed = await f473Contract.getCurrentHeartsDecayed();
+    expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(Math.max(0, 20 - decayed));
 
     // Check that decay event was emitted
     eventPresent = false;
     for (const event of receipt.events) {
       if (event.event === 'HeartsBurned') {
-        expect(event.args.currentBurned).to.equal(18);
+        expect(event.args.currentBurned).to.equal(Math.max(0, 20 - decayed));
         eventPresent = true;
       }
     }
@@ -867,27 +870,29 @@ describe('F473', function () {
 
     tx = await f473Contract.connect(acct1).burnHearts(50);
     receipt = await tx.wait();
-    expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(67); // Decay rate of 1
+    decayed = await f473Contract.getCurrentHeartsDecayed();
+    expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(Math.max(0, 70 - decayed));
 
     // Check that decay event was emitted
     eventPresent = false;
     for (const event of receipt.events) {
       if (event.event === 'HeartsBurned') {
-        expect(event.args.currentBurned).to.equal(67);
+        expect(event.args.currentBurned).to.equal(Math.max(0, 70 - decayed));
         eventPresent = true;
       }
     }
     expect(eventPresent).to.equal(true);
 
-    tx = await f473Contract.connect(acct2).burnHearts(30);
+    tx = await f473Contract.connect(acct2).burnHearts(29);
     receipt = await tx.wait();
-    expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(96); // Decay rate of 1
+    decayed = await f473Contract.getCurrentHeartsDecayed();
+    expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(Math.max(0, 99 - decayed));
 
     // Check that decay event was emitted
     eventPresent = false;
     for (const event of receipt.events) {
       if (event.event === 'HeartsBurned') {
-        expect(event.args.currentBurned).to.equal(96);
+        expect(event.args.currentBurned).to.equal(Math.max(0, 99 - decayed));
         eventPresent = true;
       }
     }
@@ -897,9 +902,10 @@ describe('F473', function () {
     expect(await f473Contract.GAME_OVER()).to.equal(false);
 
     // End the game
-    tx = await f473Contract.connect(acct1).burnHearts(7);
+    tx = await f473Contract.connect(acct1).burnHearts(HEARTS_TIME_BUFFER);
     receipt = await tx.wait();
-    expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(103); // Decay rate does not matter when game is over
+    decayed = await f473Contract.getCurrentHeartsDecayed(); // after issuing the burnHearts call because the decayed number changes
+    expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(Math.max(0, 99 + HEARTS_TIME_BUFFER - decayed)); // Decay rate does not matter when game is over
 
     // Check that decay event was emitted
     eventPresent = false;
@@ -934,7 +940,7 @@ describe('F473', function () {
     expect(await f473Contract.GAME_OVER()).to.equal(false);
 
     // Move to the next time frame for the following test
-    ethers.provider.send("evm_increaseTime", [60 * 10]);
+    ethers.provider.send("evm_increaseTime", [TIME_SLICE_TIME]);
     ethers.provider.send("evm_mine");
   });
 
@@ -942,20 +948,20 @@ describe('F473', function () {
 
   it('Should allow regular players to restart the game using hearts', async function () {
     // Mint all hearts
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 1, 1, 20);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 2, 1, 20);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 3, 1, 20);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 4, 1, 20);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 5, 1, 20);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 6, 1, 20);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 7, 1, 20);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 1, 2, 20);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 2, 2, 20);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 3, 2, 20);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 4, 2, 20);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 5, 2, 20);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 6, 2, 20);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 7, 2, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 1, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 2, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 3, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 4, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 5, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 6, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 7, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 1, 2, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 2, 2, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 3, 2, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 4, 2, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 5, 2, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 6, 2, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 7, 2, 40);
 
     // Set all of the lights to the restart pattern
     await f473Contract.connect(acct1).burnHeartLightRegion(0, 0x210001);
@@ -1028,7 +1034,9 @@ describe('F473', function () {
       ethers.BigNumber.from(0), ethers.BigNumber.from(0), ethers.BigNumber.from(0)
     ];
 
-    for (let token of tokens.tokenIds) {
+    let tokenIds = [...tokens.tokenIds];
+    tokenIds.reverse();
+    for (let token of tokenIds) {
       if ((token.toNumber() & parseInt(0x10000, 10)) > 0) {
         await f473Contract.connect(acct1).burnHeartLightRegion(lastLitRegion, token);
         hearts[lastLitRegion++] = token;
@@ -1094,20 +1102,20 @@ describe('F473', function () {
 
   it('Should NOT allow regular players to restart the game using hearts', async function () {
     // Mint all hearts
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 1, 1, 2);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 2, 1, 2);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 3, 1, 2);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 4, 1, 2);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 5, 1, 2);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 6, 1, 2);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 7, 1, 2);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 1, 2, 2);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 2, 2, 2);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 3, 2, 2);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 4, 2, 2);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 5, 2, 2);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 6, 2, 2);
-    await f473TokensContract.connect(owner).mintHearts(acct1.address, 7, 2, 2);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 1, 1, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 2, 1, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 3, 1, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 4, 1, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 5, 1, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 6, 1, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 7, 1, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 1, 2, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 2, 2, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 3, 2, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 4, 2, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 5, 2, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 6, 2, 20);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 7, 2, 20);
 
     // Set all of the lights to the restart pattern
     await f473Contract.connect(acct1).burnHeartLightRegion(0, 0x210001);
@@ -1140,7 +1148,7 @@ describe('F473', function () {
     expect(await f473Contract.GAME_OVER()).to.equal(false);
 
     // Move to the next time frame for the following test
-    ethers.provider.send("evm_increaseTime", [60 * 10]);
+    ethers.provider.send("evm_increaseTime", [TIME_SLICE_TIME]);
     ethers.provider.send("evm_mine");
   });
 
@@ -1206,14 +1214,14 @@ describe('F473', function () {
     let timeRemaining = await f473Contract.getLevelTimeRemaining();
 
     // Start by finding a level that starts without a couple -- 5 is arbitrary
-    for (let idx = 0; idx < 5; idx++) {
+    for (let idx = 0; idx < 3; idx++) {
       // Bump a minute
-      ethers.provider.send("evm_increaseTime", [60]);
+      ethers.provider.send("evm_increaseTime", [5]);
       ethers.provider.send("evm_mine");
 
-      // Expect that the time remaining is decreaing by 60 seconds each time 
+      // Expect that the time remaining is decreaing by 5 seconds each time 
       let currentTimeRemaining = await f473Contract.getLevelTimeRemaining();
-      expect(timeRemaining - currentTimeRemaining).to.equal(60);
+      expect(timeRemaining - currentTimeRemaining).to.equal(5);
       timeRemaining = currentTimeRemaining;
     }
   });
@@ -1237,7 +1245,7 @@ describe('F473', function () {
     let timeSlice = (await f473Contract.getTimeSlice()).toNumber();
     let lastReasonableRandomNumber = await f473Contract.getRandomNumber(timeSlice + 3);
 
-    ethers.provider.send("evm_increaseTime", [60 * 100000]);
+    ethers.provider.send("evm_increaseTime", [TIME_SLICE_TIME * 10000]);
     ethers.provider.send("evm_mine");
 
     let laterTimeSlice = (await f473Contract.getTimeSlice()).toNumber();
