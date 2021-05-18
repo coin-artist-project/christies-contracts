@@ -67,6 +67,7 @@ contract F473 is ReentrancyGuard, Ownable
 	uint256 lastRandomTimeSlice;
 
 	// Events
+	event PairCardTraded(address from, uint256 id);
 	event HeartsBurned(uint256 currentBurned);
 	event RandomNumberUpdated();
 	event GameOver();
@@ -417,6 +418,14 @@ contract F473 is ReentrancyGuard, Ownable
 		// Mint hearts
 		mintHearts(_cardId1Owner, NUM_HEARTS_MINTED);
 		mintHearts(_cardId2Owner, NUM_HEARTS_MINTED);
+
+		if (_cardId1Owner != _cardId2Owner) {
+			if (_msgSender() != _cardId1Owner) {
+				emit PairCardTraded(_cardId1Owner, _cardId1);
+			} else {
+				emit PairCardTraded(_cardId2Owner, _cardId2);
+			}
+		}
 	}
 
 	function tradeForCoupleCard(

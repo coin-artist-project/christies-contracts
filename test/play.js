@@ -699,6 +699,21 @@ describe('F473', function () {
           eventPresent = true;
         }
       }
+
+      // And review the PairCardTraded event
+      let localEventPresent = false;
+      for (const event of receipt.events) {
+        if (event.event === 'PairCardTraded') {
+          // Make sure that the transfer event has everything expected of it - from, to, id, value
+          expect(event.args.from).to.equal(acct1.address);
+          expect(event.args.id.toNumber()).to.equal(id2.toNumber());
+
+          // Make sure an event fired
+          localEventPresent = true;
+        }
+      }
+      // Verify that the event fired
+      expect(localEventPresent).to.equal(true);
     }
 
     // Make sure both accounts have hearts
