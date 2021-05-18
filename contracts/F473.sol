@@ -39,6 +39,7 @@ contract F473 is ReentrancyGuard, Ownable
 	mapping(uint256 => mapping (uint256 => uint256)) couplesClaimed;
 	mapping(uint256 => mapping (uint256 => uint256)) heartsBurned;
 	mapping(uint256 => mapping (uint256 => uint256)) loveDecayRate;
+	mapping(uint256 => mapping (uint256 => uint256)) loveDecayed;
 	mapping(uint256 => mapping (uint256 => uint256)) lastRandomSwitchDuration;
 
 	// Game Config
@@ -448,6 +449,8 @@ contract F473 is ReentrancyGuard, Ownable
 
 		// Increase decay rate
 		if (getLevel(timeSlice) == 9) {
+			loveDecayed[GAME_VERSION][timeSlice] = getCurrentHeartsDecayed();
+			lastRandomSwitchDuration[GAME_VERSION][timeSlice] = timeIntoSlice();
 			loveDecayRate[GAME_VERSION][timeSlice] += ++couplesClaimed[GAME_VERSION][timeSlice];
 		}
 	}
@@ -654,7 +657,7 @@ contract F473 is ReentrancyGuard, Ownable
 		uint256 timeSlice = getTimeSlice();
 		uint256 timeSpentInSlice = timeIntoSlice();
 		uint256 secondsAfterLastSwitch = (timeSpentInSlice > lastRandomSwitchDuration[GAME_VERSION][timeSlice]) ? timeSpentInSlice - lastRandomSwitchDuration[GAME_VERSION][timeSlice] : 0;
-		return (secondsAfterLastSwitch / SECONDS_PER_HEART_DECAY) * getLoveDecayRate();
+		return (secondsAfterLastSwitch / SECONDS_PER_HEART_DECAY) * getLoveDecayRate() + loveDecayed[GAME_VERSION][timeSlice];
 	}
 
 	function getTimeSlice()

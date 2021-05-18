@@ -16,7 +16,7 @@ describe('F473', function () {
   let puzzleAcct3;
   let accts;
 
-  let acct1cards = [];
+  let acct1cards = [], acct2cards = [];
 
   let NUM_SOLO;
   let NUM_PAIR;
@@ -818,6 +818,87 @@ describe('F473', function () {
     expect((await f473Contract.getLoveMeterSize()).toNumber()).to.equal(NUM_HEARTS_LEVEL_NINE_COUPLE);
   });
 
+  it('Validate that the decay increases at the rate expected', async function () {
+    // Need to be on level nine
+    await forwardToNextLevel9();
+    let timeRemaining = (await f473Contract.getLevelTimeRemaining()).toNumber();
+    let alreadyDecayed = (await f473Contract.getCurrentHeartsDecayed()).toNumber();
+
+    for (let idx = 0; idx < (timeRemaining - 10); idx += 10) {
+      // Bump up time
+      ethers.provider.send("evm_increaseTime", [10]);
+      ethers.provider.send("evm_mine");
+
+      let newlyDecayed = (await f473Contract.getCurrentHeartsDecayed()).toNumber();
+      expect(newlyDecayed - alreadyDecayed).to.equal(1);
+      alreadyDecayed = newlyDecayed;
+    }
+
+    ethers.provider.send("evm_increaseTime", [10]);
+    ethers.provider.send("evm_mine");
+  });
+
+  it('Validate that the decay increases at the rate expected, while couples are claimed', async function () {
+    // Start by finding a level that starts without a couple
+    do {
+      await forwardToNextLevel9();
+    } while ((await f473Contract.getCurrentCardCharacter(0)).toNumber() <= NUM_SOLO + NUM_PAIR);
+
+    let alreadyDecayed = (await f473Contract.getCurrentHeartsDecayed()).toNumber();
+
+    // Bump up time
+    ethers.provider.send("evm_increaseTime", [10]);
+    ethers.provider.send("evm_mine");
+
+    let newlyDecayed = (await f473Contract.getCurrentHeartsDecayed()).toNumber();
+    expect(newlyDecayed - alreadyDecayed).to.equal(1);
+
+    // Trade card in for couple
+    await f473Contract.connect(acct1).tradeForCoupleCard(acct1cards.pop(), 0);
+
+    newlyDecayed = (await f473Contract.getCurrentHeartsDecayed()).toNumber();
+    expect(newlyDecayed - alreadyDecayed).to.equal(1);
+
+    // Bump up time
+    ethers.provider.send("evm_increaseTime", [10]);
+    ethers.provider.send("evm_mine");
+
+    newlyDecayed = (await f473Contract.getCurrentHeartsDecayed()).toNumber();
+    expect(newlyDecayed - alreadyDecayed).to.equal(3);
+
+    // Get first card for acct2
+    let tokens = await f473TokensContract.getAccountTokensFormatted(acct2.address, 0, 1);
+
+    // Trade card in for couple
+    await f473Contract.connect(acct2).tradeForCoupleCard(tokens.tokenIds[0], 0);
+
+    newlyDecayed = (await f473Contract.getCurrentHeartsDecayed()).toNumber();
+    expect(newlyDecayed - alreadyDecayed).to.equal(3);
+
+    // Bump up time
+    ethers.provider.send("evm_increaseTime", [10]);
+    ethers.provider.send("evm_mine");
+
+    newlyDecayed = (await f473Contract.getCurrentHeartsDecayed()).toNumber();
+    expect(newlyDecayed - alreadyDecayed).to.equal(7);
+
+    let timeRemaining = (await f473Contract.getLevelTimeRemaining()).toNumber();
+    alreadyDecayed = (await f473Contract.getCurrentHeartsDecayed()).toNumber();
+    for (let idx = 0; idx < (timeRemaining - 10); idx += 10) {
+      // Bump up time
+      ethers.provider.send("evm_increaseTime", [10]);
+      ethers.provider.send("evm_mine");
+
+      let newlyDecayed = (await f473Contract.getCurrentHeartsDecayed()).toNumber();
+      expect(newlyDecayed - alreadyDecayed).to.equal(4);
+      alreadyDecayed = newlyDecayed;
+    }
+
+    // Bump up time
+    ethers.provider.send("evm_increaseTime", [10]);
+    ethers.provider.send("evm_mine");
+  });
+
   async function beatTheGame(version = 1) {
     // Start by finding a level that starts without a couple
     do {
@@ -1209,7 +1290,6 @@ describe('F473', function () {
   });
 
   it('Ensure that we can get the time remaining ahead of the following level', async function () {
-
     // See how much time is remaining
     let timeRemaining = await f473Contract.getLevelTimeRemaining();
 
