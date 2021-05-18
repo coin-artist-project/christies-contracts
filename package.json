@@ -17,6 +17,7 @@
 		"rollGotoNextCouple": "hardhat run ./scripts/rollGotoNextCouple.js",
 		"rollGotoLevelSeven": "hardhat run ./scripts/rollGotoLevelSeven.js",
 		"rollGotoNextLevel": "hardhat run ./scripts/rollGotoNextLevel.js",
+		"rollGotoDesiredCard": "hardhat run ./scripts/rollGotoDesiredCard.js",
 		"setAllowlist": "hardhat run ./scripts/setAllowlist.js",
 		"setAllowlistDev": "hardhat run ./scripts/setAllowlistDev.js",
 		"test": "hardhat test --network hardhat"
