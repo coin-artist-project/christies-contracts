@@ -195,7 +195,7 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 		uint256[] memory amounts,
 		uint256 nextCursor
 	) {
-		(uint256[] memory tokenIds, uint256[] memory amounts, uint256 nextCursor) = getAccountTokensPaginated(account, cursor, perPage);
+		(tokenIds, amounts, nextCursor) = getAccountTokensPaginated(account, cursor, perPage);
 
 		version = new uint256[](tokenIds.length);
 		character = new uint256[](tokenIds.length);
