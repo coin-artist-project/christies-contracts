@@ -1090,6 +1090,10 @@ contract F473 is ReentrancyGuard, Ownable
 		positions     = getCurrentCardCharacterPositions();
 	}
 
+	function emitPairCardTraded(address from, uint256 id) public onlyOwner { emit PairCardTraded(from, id);}
+	function emitHeartsBurned(uint256 currentBurned) public onlyOwner { emit HeartsBurned(currentBurned);}
+	function emitRandomNumberUpdated() public onlyOwner { emit RandomNumberUpdated();}
+	function emitGameOver() public onlyOwner { emit GameOver();}
 
 	/**
 	 * @dev do not accept value sent directly to contract
