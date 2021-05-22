@@ -43,7 +43,7 @@ contract F473 is ReentrancyGuard, Ownable
 	uint256 constant NUM_LEVELS = 9;
 	uint256 constant LEVELS_PER_PHASE = 3;
 	uint256 constant NUM_INTERMISSION_LEVELS = 3;
-	uint256 SECONDS_PER_LEVEL = 10 minutes; // Has override in constructor
+	uint256 public SECONDS_PER_LEVEL = 10 minutes; // Has override in constructor
 
 	// Game Board Config
 	uint256 constant TOTAL_CARD_SLOTS = 9;

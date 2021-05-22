@@ -18,7 +18,8 @@ async function main() {
 
   const provider = await ethers.getDefaultProvider();
 
-  ethers.provider.send("evm_increaseTime", [60 * 10]);
+  let SECONDS_PER_LEVEL = await contract.SECONDS_PER_LEVEL();
+  ethers.provider.send("evm_increaseTime", [SECONDS_PER_LEVEL.toNumber()]);
 
   let tx = await contract.roll();
   let receipt = await tx.wait();

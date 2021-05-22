@@ -25,7 +25,8 @@ async function main() {
 
   let level;
   while ((level = (await contract.getCurrentLevel()).toNumber()) != 7) {
-    ethers.provider.send("evm_increaseTime", [60 * 10]);
+    let SECONDS_PER_LEVEL = await contract.SECONDS_PER_LEVEL();
+    ethers.provider.send("evm_increaseTime", [SECONDS_PER_LEVEL.toNumber()]);
     await contract.roll();
     console.log("At level", level);
   }

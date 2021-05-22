@@ -843,6 +843,132 @@ describe('F473', function () {
     expect((await f473Contract.getLoveMeterSize()).toNumber()).to.equal(NUM_HEARTS_LEVEL_NINE_COUPLE);
   });
 
+  it('Claim solo card, verify that decay occurs', async function () {
+    // Start by finding a level that starts with a couple
+    do {
+      await forwardToNextLevel9();
+    } while ((await f473Contract.getCurrentCardCharacter(0)).toNumber() >= NUM_SOLO);
+
+    expect((await f473Contract.getCurrentLevel()).toNumber()).to.equal(9);
+    expect((await f473Contract.getCurrentCardCharacter(0)).toNumber()).to.be.lte(NUM_SOLO);
+    expect((await f473Contract.getLoveDecayRate()).toNumber()).to.equal(1);
+    expect((await f473Contract.getLoveMeterSize()).toNumber()).to.equal(NUM_HEARTS_LEVEL_NINE_OTHER);
+
+    // Get current character
+    let currentCharacter = await f473Contract.getCurrentCardCharacter(0);
+
+    // Trade card in
+    let tx = await f473Contract.connect(acct1).claimSoloCard(0);
+    let receipt = await tx.wait();
+
+    // Now review the event
+    let eventPresent = false;
+    for (const log of receipt.logs) {
+      let event;
+      try {
+        event = f473TokensContract.interface.parseLog(log);
+      } catch (_) {
+        continue;
+      }
+
+      if (event.name === 'TransferSingle' && event.args.from === '0x0000000000000000000000000000000000000000') {
+        // Deconstruct the returned card
+        let cardDeconstructed = await f473TokensContract.deconstructCard(event.args.id.toNumber());
+
+        // Make sure that the transfer event has everything expected of it - from, to, id, value
+        expect(event.args.from).to.equal('0x0000000000000000000000000000000000000000');
+        expect(event.args.to).to.equal(acct1.address);
+        expect(cardDeconstructed.character.toNumber()).to.equal(currentCharacter.toNumber());
+        expect(event.args.value).to.equal(1);
+
+        // Make sure an event fired
+        eventPresent = true;
+      }
+    }
+
+    // Verify that the event fired
+    expect(eventPresent).to.equal(true);
+
+    // Check that decay event was emitted
+    eventPresent = false;
+    for (const event of receipt.events) {
+      if (event.event === 'HeartsBurned') {
+        expect(event.args.currentBurned).to.equal(0);
+        eventPresent = true;
+      }
+    }
+    expect(eventPresent).to.equal(true);
+
+    // Increase in decay rate
+    expect((await f473Contract.getLoveDecayRate()).toNumber()).to.equal(1);
+    expect((await f473Contract.getLoveMeterSize()).toNumber()).to.equal(NUM_HEARTS_LEVEL_NINE_OTHER);
+  });
+
+  it('Trade & claim pair card, verify that decay occurs', async function () {
+    // Start by finding a level that starts with a couple
+    do {
+      await forwardToNextLevel9();
+    } while (
+      (await f473Contract.getCurrentCardCharacter(0)).toNumber() > NUM_SOLO + NUM_PAIR ||
+      (await f473Contract.getCurrentCardCharacter(0)).toNumber() <= NUM_SOLO
+    );
+
+    expect((await f473Contract.getCurrentLevel()).toNumber()).to.equal(9);
+    expect((await f473Contract.getCurrentCardCharacter(0)).toNumber()).to.be.gt(NUM_SOLO);
+    expect((await f473Contract.getCurrentCardCharacter(0)).toNumber()).to.be.lte(NUM_SOLO + NUM_PAIR);
+    expect((await f473Contract.getLoveDecayRate()).toNumber()).to.equal(1);
+    expect((await f473Contract.getLoveMeterSize()).toNumber()).to.equal(NUM_HEARTS_LEVEL_NINE_OTHER);
+
+    // Get current character
+    let currentCharacter = await f473Contract.getCurrentCardCharacter(0);
+
+    // Trade card in
+    let tx = await f473Contract.connect(acct1).tradeForPairCard(acct1cards.pop(), acct1cards.pop(), 0);
+    let receipt = await tx.wait();
+
+    // Now review the event
+    let eventPresent = false;
+    for (const log of receipt.logs) {
+      let event;
+      try {
+        event = f473TokensContract.interface.parseLog(log);
+      } catch (_) {
+        continue;
+      }
+
+      if (event.name === 'TransferSingle' && event.args.from === '0x0000000000000000000000000000000000000000') {
+        // Deconstruct the returned card
+        let cardDeconstructed = await f473TokensContract.deconstructCard(event.args.id.toNumber());
+
+        // Make sure that the transfer event has everything expected of it - from, to, id, value
+        expect(event.args.from).to.equal('0x0000000000000000000000000000000000000000');
+        expect(event.args.to).to.equal(acct1.address);
+        expect(cardDeconstructed.character.toNumber()).to.equal(currentCharacter.toNumber());
+        expect(event.args.value).to.equal(1);
+
+        // Make sure an event fired
+        eventPresent = true;
+      }
+    }
+
+    // Verify that the event fired
+    expect(eventPresent).to.equal(true);
+
+    // Check that decay event was emitted
+    eventPresent = false;
+    for (const event of receipt.events) {
+      if (event.event === 'HeartsBurned') {
+        expect(event.args.currentBurned).to.equal(0);
+        eventPresent = true;
+      }
+    }
+    expect(eventPresent).to.equal(true);
+
+    // Increase in decay rate
+    expect((await f473Contract.getLoveDecayRate()).toNumber()).to.equal(1);
+    expect((await f473Contract.getLoveMeterSize()).toNumber()).to.equal(NUM_HEARTS_LEVEL_NINE_OTHER);
+  });
+
   async function beatTheGame(version = 1) {
     // Start by finding a level that starts without a couple
     do {
