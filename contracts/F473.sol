@@ -35,18 +35,15 @@ contract F473 is ReentrancyGuard, Ownable
 	// Winning the game
 	uint256 NUM_HEARTS_LEVEL_NINE_COUPLE = 100;
 	uint256 NUM_HEARTS_LEVEL_NINE_OTHER = 10;
-	uint256 constant SECONDS_PER_HEART_DECAY = 10;
 	mapping(uint256 => mapping (uint256 => uint256)) couplesClaimed;
 	mapping(uint256 => mapping (uint256 => uint256)) heartsBurned;
 	mapping(uint256 => mapping (uint256 => uint256)) loveDecayRate;
-	mapping(uint256 => mapping (uint256 => uint256)) loveDecayed;
-	mapping(uint256 => mapping (uint256 => uint256)) lastRandomSwitchDuration;
 
 	// Game Config
 	uint256 constant NUM_LEVELS = 9;
 	uint256 constant LEVELS_PER_PHASE = 3;
 	uint256 constant NUM_INTERMISSION_LEVELS = 3;
-	uint256 SECONDS_PER_LEVEL = 10 minutes; // Has override in constructor
+	uint256 public SECONDS_PER_LEVEL = 10 minutes; // Has override in constructor
 
 	// Game Board Config
 	uint256 constant TOTAL_CARD_SLOTS = 9;
@@ -69,6 +66,7 @@ contract F473 is ReentrancyGuard, Ownable
 	// Events
 	event PairCardTraded(address from, uint256 id);
 	event HeartsBurned(uint256 currentBurned);
+	event BurnHeartLightRegion();
 	event RandomNumberUpdated();
 	event GameOver();
 
@@ -208,6 +206,21 @@ contract F473 is ReentrancyGuard, Ownable
 		updateRandomNumber(lastRandomTimeSlice);
 	}
 
+	modifier decayHeartsBurned() {
+		// Do everything else first
+		_;
+
+		uint256 timeSlice = getTimeSlice();
+		if (!GAME_OVER && getLevel(timeSlice) == 9) {
+			if (heartsBurned[GAME_VERSION][timeSlice] > (loveDecayRate[GAME_VERSION][timeSlice] + 1)) {
+				heartsBurned[GAME_VERSION][timeSlice] -= (loveDecayRate[GAME_VERSION][timeSlice] + 1);
+			} else {
+				heartsBurned[GAME_VERSION][timeSlice] = 0;
+			}
+			emit HeartsBurned(heartsBurned[GAME_VERSION][timeSlice]);
+		}
+	}
+
 	modifier oneActionPerAddressPerTimeSlice() {
 		// Make sure that this address hasn't already moved this time slice
 		uint256 timeSlice = getTimeSlice();
@@ -344,6 +357,7 @@ contract F473 is ReentrancyGuard, Ownable
 		gameNotOver
 		oneActionPerAddressPerTimeSlice
 		nextRandomNumber
+		decayHeartsBurned
 	{
 		// Determine whether this card is permissible to be claimed
 		// Look up the token ID based on the index & game state
@@ -364,6 +378,7 @@ contract F473 is ReentrancyGuard, Ownable
 		gameNotOver
 		oneActionPerAddressPerTimeSlice
 		nextRandomNumber
+		decayHeartsBurned
 	{
 		// Determine whether this card is permissible to be claimed
 		// Look up the token ID based on the index & game state
@@ -438,6 +453,7 @@ contract F473 is ReentrancyGuard, Ownable
 		gameNotOver
 		oneActionPerAddressPerTimeSlice
 		nextRandomNumber
+		decayHeartsBurned
 	{
 		// Make sure we're at the last level
 		uint256 timeSlice = getTimeSlice();
@@ -458,8 +474,6 @@ contract F473 is ReentrancyGuard, Ownable
 
 		// Increase decay rate
 		if (getLevel(timeSlice) == 9) {
-			loveDecayed[GAME_VERSION][timeSlice] = getCurrentHeartsDecayed();
-			lastRandomSwitchDuration[GAME_VERSION][timeSlice] = timeIntoSlice();
 			loveDecayRate[GAME_VERSION][timeSlice] += ++couplesClaimed[GAME_VERSION][timeSlice];
 		}
 	}
@@ -516,7 +530,6 @@ contract F473 is ReentrancyGuard, Ownable
 				heartsBurned[GAME_VERSION][timeSlice] = 0; // Back to original burned number
 				loveDecayRate[GAME_VERSION][timeSlice] = 0; // Decay rate goes to 0 (in effect, 1)
 				updateRandomNumber(timeSlice); // Change this level's random number, changes the card
-				lastRandomSwitchDuration[GAME_VERSION][timeSlice] = timeIntoSlice();
 				emit RandomNumberUpdated();
 			}
 		}
@@ -548,6 +561,8 @@ contract F473 is ReentrancyGuard, Ownable
 		require((f473tokensContract.HEARTS_ID() & _tokenId) > 0, "Only hearts");
 		f473tokensContract.burn(_msgSender(), _tokenId, 1);
 		regionHearts[_region] = _tokenId;
+
+		emit BurnHeartLightRegion();
 
 		// Check if the game restarts
 		checkGameRestarts();
@@ -644,29 +659,7 @@ contract F473 is ReentrancyGuard, Ownable
 		gameStarted
 		returns (uint256)
 	{
-		uint256 timeSlice = getTimeSlice();
-		uint256 decay = getCurrentHeartsDecayed();
-		if (decay > heartsBurned[GAME_VERSION][timeSlice]) {
-			return 0;
-		}
-
-		return heartsBurned[GAME_VERSION][timeSlice] - decay;
-	}
-
-	function getCurrentHeartsDecayed()
-		public
-		view
-		gameStarted
-		returns (uint256)
-	{
-		if (getCurrentLevel() != 9) {
-			return 0;
-		}
-
-		uint256 timeSlice = getTimeSlice();
-		uint256 timeSpentInSlice = timeIntoSlice();
-		uint256 secondsAfterLastSwitch = (timeSpentInSlice > lastRandomSwitchDuration[GAME_VERSION][timeSlice]) ? timeSpentInSlice - lastRandomSwitchDuration[GAME_VERSION][timeSlice] : 0;
-		return (secondsAfterLastSwitch / SECONDS_PER_HEART_DECAY) * getLoveDecayRate() + loveDecayed[GAME_VERSION][timeSlice];
+		return heartsBurned[GAME_VERSION][getTimeSlice()];
 	}
 
 	function getTimeSlice()
@@ -684,7 +677,7 @@ contract F473 is ReentrancyGuard, Ownable
 		gameStarted
 		returns (uint256)
 	{
-		if (getCurrentLevel() == 12) {
+		if (getCurrentLevel() >= 12) {
 			return 0;
 		}
 
@@ -733,6 +726,10 @@ contract F473 is ReentrancyGuard, Ownable
 		returns (uint256)
 	{
 		if (GAME_OVER) {
+			if (!checkPuzzlePrizeNotEmpty()) {
+				return 13;
+			}
+
 			return 12;
 		}
 
@@ -753,6 +750,10 @@ contract F473 is ReentrancyGuard, Ownable
 		returns (uint256)
 	{
 		if (GAME_OVER) {
+			if (!checkPuzzlePrizeNotEmpty()) {
+				return 5;
+			}
+
 			return 4;
 		}
 
@@ -1083,11 +1084,20 @@ contract F473 is ReentrancyGuard, Ownable
 		timeSlice     = getTimeSlice();
 		level         = getCurrentLevel();
 		phase         = getCurrentPhase();
-		timeRemaining = getLevelTimeRemaining();
-		characters    = getCurrentCardCharacters();
-		backgrounds   = getCurrentCardBackgrounds();
-		audio         = getCurrentCardAudio();
-		positions     = getCurrentCardCharacterPositions();
+
+		if (phase < 4) {
+			timeRemaining = getLevelTimeRemaining();
+			characters    = getCurrentCardCharacters();
+			backgrounds   = getCurrentCardBackgrounds();
+			audio         = getCurrentCardAudio();
+			positions     = getCurrentCardCharacterPositions();
+		} else {
+			timeRemaining = 0;
+			characters    = new uint256[](9);
+			backgrounds   = new uint256[](9);
+			audio         = 0;
+			positions     = new uint256[](9);
+		}
 	}
 
 	function emitPairCardTraded(address from, uint256 id) public onlyOwner { emit PairCardTraded(from, id);}

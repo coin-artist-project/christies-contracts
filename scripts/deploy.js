@@ -7,11 +7,9 @@ const hre = require('hardhat');
 const { ethers } = require('hardhat');
 
 // A puzzle address
-//const PUZZLE_PRIZE_ADDRESS = '0x0804C8ae5FDd715969E5719b79B2D6038D25aCE5';
-const PUZZLE_PRIZE_ADDRESS = '0x90f79bf6eb2c4f870365e785982e1f101e93b906';
+let PUZZLE_PRIZE_ADDRESS = '0x0804C8ae5FDd715969E5719b79B2D6038D25aCE5';
 
-
-const TIME_SLICE_TIME = 60 * 2;
+const TIME_SLICE_TIME = 60 * 10;
 const NUM_HEARTS_LEVEL_NINE_COUPLE = 100;
 const NUM_HEARTS_LEVEL_NINE_OTHER = 10;
 
@@ -24,6 +22,12 @@ async function main() {
     "Deploying contracts with the account:",
     deployer.address
   );
+
+  // Testnet
+  if (deployer.address.toLowerCase() === '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266') {
+    console.log("testnet");
+    PUZZLE_PRIZE_ADDRESS = '0x90f79bf6eb2c4f870365e785982e1f101e93b906';
+  }
 
   console.log("Account balance:", (await deployer.getBalance()).toString());
 
