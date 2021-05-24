@@ -66,6 +66,7 @@ contract F473 is ReentrancyGuard, Ownable
 	// Events
 	event PairCardTraded(address from, uint256 id);
 	event HeartsBurned(uint256 currentBurned);
+	event BurnHeartLightRegion();
 	event RandomNumberUpdated();
 	event GameOver();
 
@@ -561,6 +562,8 @@ contract F473 is ReentrancyGuard, Ownable
 		f473tokensContract.burn(_msgSender(), _tokenId, 1);
 		regionHearts[_region] = _tokenId;
 
+		emit BurnHeartLightRegion();
+
 		// Check if the game restarts
 		checkGameRestarts();
 	}
@@ -674,7 +677,7 @@ contract F473 is ReentrancyGuard, Ownable
 		gameStarted
 		returns (uint256)
 	{
-		if (getCurrentLevel() == 12) {
+		if (getCurrentLevel() >= 12) {
 			return 0;
 		}
 
@@ -723,6 +726,10 @@ contract F473 is ReentrancyGuard, Ownable
 		returns (uint256)
 	{
 		if (GAME_OVER) {
+			if (!checkPuzzlePrizeNotEmpty()) {
+				return 13;
+			}
+
 			return 12;
 		}
 
@@ -743,6 +750,10 @@ contract F473 is ReentrancyGuard, Ownable
 		returns (uint256)
 	{
 		if (GAME_OVER) {
+			if (!checkPuzzlePrizeNotEmpty()) {
+				return 5;
+			}
+
 			return 4;
 		}
 
@@ -1073,11 +1084,20 @@ contract F473 is ReentrancyGuard, Ownable
 		timeSlice     = getTimeSlice();
 		level         = getCurrentLevel();
 		phase         = getCurrentPhase();
-		timeRemaining = getLevelTimeRemaining();
-		characters    = getCurrentCardCharacters();
-		backgrounds   = getCurrentCardBackgrounds();
-		audio         = getCurrentCardAudio();
-		positions     = getCurrentCardCharacterPositions();
+
+		if (phase < 4) {
+			timeRemaining = getLevelTimeRemaining();
+			characters    = getCurrentCardCharacters();
+			backgrounds   = getCurrentCardBackgrounds();
+			audio         = getCurrentCardAudio();
+			positions     = getCurrentCardCharacterPositions();
+		} else {
+			timeRemaining = 0;
+			characters    = new uint256[](9);
+			backgrounds   = new uint256[](9);
+			audio         = 0;
+			positions     = new uint256[](9);
+		}
 	}
 
 	function emitPairCardTraded(address from, uint256 id) public onlyOwner { emit PairCardTraded(from, id);}
