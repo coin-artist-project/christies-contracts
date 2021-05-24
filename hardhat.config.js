@@ -28,14 +28,6 @@ module.exports = {
       //  auto: false,
       //  interval: 2000
       //}
-    },
-    mainnet: {
-      url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`,
-      accounts: [`0x${process.env.MAINNET_PRIVATE_KEY}`]
-    },
-    goerli: {
-      url: `https://eth-goerli.alchemyapi.io/v2/${process.env.TESTNET_ALCHEMY_KEY}`,
-      accounts: [`0x${process.env.TESTNET_PRIVATE_KEY}`]
     }
   },
   etherscan: {
