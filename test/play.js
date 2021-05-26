@@ -101,6 +101,40 @@ describe('F473', function () {
     expect(response).to.equal(1);
   });
 
+  it('First game of F473 should still be active even if the puzzle prize is claimed early', async function () {
+    let response = await f473Contract.checkPuzzlePrizeNotEmpty();
+    expect(response).to.equal(true);
+
+    response = await f473Contract.checkGameNotOver();
+    expect(response).to.equal(true);
+
+    let balance = (await puzzleAcct3.getBalance()); // Subtract gas fee, convert to hex
+
+    await puzzleAcct3.sendTransaction({
+        from: puzzleAcct3.address,
+        to: acct2.address,
+        value: balance.sub("168008000000000")._hex
+    });
+
+    response = await f473Contract.checkPuzzlePrizeNotEmpty();
+    expect(response).to.equal(false);
+
+    response = await f473Contract.checkGameNotOver();
+    expect(response).to.equal(true);
+
+    await acct2.sendTransaction({
+        from: acct2.address,
+        to: puzzleAcct3.address,
+        value: balance._hex
+    });
+
+    response = await f473Contract.checkPuzzlePrizeNotEmpty();
+    expect(response).to.equal(true);
+
+    response = await f473Contract.checkGameNotOver();
+    expect(response).to.equal(true);
+  });
+
   it('Should not allow a non-owner to set the URI', async function () {
     await expectRevert(f473TokensContract.connect(acct1).setBaseUri("testbreak"), 'Ownable: caller is not the owner');
     await expectRevert(f473TokensContract.connect(acct2).setBaseUri("testbreak"), 'Ownable: caller is not the owner');

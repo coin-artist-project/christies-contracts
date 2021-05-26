@@ -103,6 +103,9 @@ contract F473 is ReentrancyGuard, Ownable
 		NUM_FINAL_AUDIO   = f473tokensContract.NUM_FINAL_AUDIO();
 		NUM_HEARTS_COLORS = f473tokensContract.NUM_HEARTS_COLORS();
 
+		// For the very first game, disallow puzzle prize to define the game ending
+		BYPASS_PUZZLE_PRIZE = true;
+
 		// Set up the region lights
 		regionHearts = new uint256[](9);
 	}
@@ -176,8 +179,16 @@ contract F473 is ReentrancyGuard, Ownable
 	}
 
 	modifier gameNotOver() {
-		require(!GAME_OVER && (checkPuzzlePrizeNotEmpty() || BYPASS_PUZZLE_PRIZE), "Game Over");
+		require(checkGameNotOver(), "Game Over");
 		_;
+	}
+
+	function checkGameNotOver()
+		public
+		view
+		returns (bool)
+	{
+		return (!GAME_OVER && (checkPuzzlePrizeNotEmpty() || BYPASS_PUZZLE_PRIZE));
 	}
 
 	modifier validTimeSlice(uint256 _timeSlice) {
@@ -523,6 +534,7 @@ contract F473 is ReentrancyGuard, Ownable
 		if (getLoveMeterFilled() >= getLoveMeterSize()) {
 			// Couples
 			if (character > NUM_SOLO_CHAR + NUM_PAIR_CHAR) {
+				BYPASS_PUZZLE_PRIZE = false; // Turn this off now
 				GAME_OVER = true;
 				emit GameOver();
 			// Solos & Pairs
