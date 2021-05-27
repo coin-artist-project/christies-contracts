@@ -9,7 +9,6 @@ const getContracts = require('./util/getContracts.js');
 
 const CONTRACT_ADDRESS = (getContracts()).F473;
 const CONTRACT_ADDRESS_TOKENS = (getContracts()).F473_TOKENS;
-const CONTRACT_ADDRESS_REPLAY = (getContracts()).F473_REPLAY_TOKENS;
 
 async function main() {
   // Check the address of the sender

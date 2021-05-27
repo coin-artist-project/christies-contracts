@@ -11,7 +11,7 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 	uint256 public constant NUM_SOLO_CHAR    = 45;
 	uint256 public constant NUM_PAIR_CHAR    = 26;
 	uint256 public constant NUM_COUPLE_CHAR  = 7;
-	uint256 public constant NUM_BACKGROUNDS  = 9;
+	uint256 public constant NUM_BACKGROUNDS  = 15;
 	uint256 public constant NUM_SOLO_AUDIO   = 1;
 	uint256 public constant NUM_PAIR_AUDIO   = 1;
 	uint256 public constant NUM_COUPLE_AUDIO = 1;
