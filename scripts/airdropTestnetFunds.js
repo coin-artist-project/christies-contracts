@@ -30,7 +30,7 @@ async function main() {
   for (let addr of TO_ADDRESSES) {
     let tx = await deployer.sendTransaction({
       to: addr,
-      value: '0x4563918244f40000'
+      value: '0x16563918244f400'
     });
     let receipt = await tx.wait();
     console.log(receipt);

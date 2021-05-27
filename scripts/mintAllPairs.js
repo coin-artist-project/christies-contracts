@@ -5,8 +5,9 @@
 // Runtime Environment's members available in the global scope.
 const hre = require('hardhat');
 const { ethers } = require('hardhat');
+const getContracts = require('./util/getContracts.js');
 
-const CONTRACT_ADDRESS = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512';
+const CONTRACT_ADDRESS = (getContracts()).F473_TOKENS;
 
 /** CONFIG **/
 const TO_ADDRESS0 = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'; // address 0 of hardhat default
@@ -26,8 +27,6 @@ async function main() {
 
   const NUM_SOLO = (await contract.NUM_SOLO_CHAR()).toNumber();
   const NUM_PAIR = (await contract.NUM_PAIR_CHAR()).toNumber();
-
-  const provider = await ethers.getDefaultProvider();
 
   for (let charIdx = NUM_SOLO + 1; charIdx <= NUM_PAIR + NUM_SOLO; charIdx++) {
     await contract.mintCard(TO_ADDRESS0, charIdx, background, audio, version);

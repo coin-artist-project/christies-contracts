@@ -5,8 +5,9 @@
 // Runtime Environment's members available in the global scope.
 const hre = require('hardhat');
 const { ethers } = require('hardhat');
+const getContracts = require('./util/getContracts.js');
 
-const CONTRACT_ADDRESS = '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0';
+const CONTRACT_ADDRESS = (getContracts()).F473;
 
 async function main() {
   // Check the address of the sender

@@ -28,6 +28,14 @@ module.exports = {
       //  auto: false,
       //  interval: 2000
       //}
+    },
+    mumbai: {
+      url: process.env.MUMBAI_ENDPOINT,
+      accounts: [`0x${process.env.TESTNET_PRIVATE_KEY}`]
+    },
+    matic: {
+      url: process.env.MATIC_ENDPOINT,
+      accounts: [`0x${process.env.MAINNET_PRIVATE_KEY}`]
     }
   },
   etherscan: {

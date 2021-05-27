@@ -7,28 +7,31 @@ const hre = require('hardhat');
 const { ethers } = require('hardhat');
 const getContracts = require('./util/getContracts.js');
 
-const CONTRACT_ADDRESS = (getContracts()).F473;
-
 async function main() {
   // Check the address of the sender
   const [deployer] = await ethers.getSigners();
+
+  const CONTRACT_ADDRESS = (getContracts()).F473;
+  const CONTRACT_ADDRESS_TOKENS = (getContracts()).F473_TOKENS;
+  const CONTRACT_ADDRESS_REPLAY = (getContracts()).F473_REPLAY_TOKENS;
 
   // We get the contract to deploy
   const F473 = await ethers.getContractFactory('F473');
   const contract = await F473.attach(CONTRACT_ADDRESS);
 
-  if ((await contract.getCurrentLevel()).toNumber() == 12) {
-    console.log("Game is over");
-    return;
-  }
+  const F473Tokens = await ethers.getContractFactory('F473Tokens');
+  const contractTokens = await F473Tokens.attach(CONTRACT_ADDRESS_TOKENS);
 
-  let level;
-  while ((level = (await contract.getCurrentLevel()).toNumber()) != 7) {
-    let SECONDS_PER_LEVEL = await contract.SECONDS_PER_LEVEL();
-    ethers.provider.send("evm_increaseTime", [SECONDS_PER_LEVEL.toNumber()]);
-    await contract.roll();
-    console.log("At level", level);
-  }
+  const F473ReplayToken = await ethers.getContractFactory('F473ReplayToken');
+  const contractReplay = await F473ReplayToken.attach(CONTRACT_ADDRESS_REPLAY);
+
+  let tx = await contractTokens.setGameAddress(CONTRACT_ADDRESS, {gasPrice: 10, gasLimit: 20000000});
+  let receipt = await tx.wait();
+  console.log(receipt);
+
+  tx = await contractReplay.setGameAddress(CONTRACT_ADDRESS, {gasPrice: 10, gasLimit: 20000000});
+  receipt = await tx.wait();
+  console.log(receipt);
 }
 
 main()

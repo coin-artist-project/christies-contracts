@@ -5,8 +5,9 @@
 // Runtime Environment's members available in the global scope.
 const hre = require('hardhat');
 const { ethers } = require('hardhat');
+const getContracts = require('./util/getContracts.js');
 
-const CONTRACT_ADDRESS = '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0';
+const CONTRACT_ADDRESS = (getContracts()).F473;
 
 async function main() {
   // Check the address of the sender
@@ -16,12 +17,10 @@ async function main() {
   const F473 = await ethers.getContractFactory('F473');
   const contract = await F473.attach(CONTRACT_ADDRESS);
 
-  const provider = await ethers.getDefaultProvider();
-
   let SECONDS_PER_LEVEL = await contract.SECONDS_PER_LEVEL();
   ethers.provider.send("evm_increaseTime", [SECONDS_PER_LEVEL.toNumber()]);
 
-  let tx = await contract.roll();
+  let tx = await contract.roll({gasLimit: 20000000});
   let receipt = await tx.wait();
   console.log(receipt);
 }

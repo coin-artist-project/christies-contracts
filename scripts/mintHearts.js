@@ -5,8 +5,9 @@
 // Runtime Environment's members available in the global scope.
 const hre = require('hardhat');
 const { ethers } = require('hardhat');
+const getContracts = require('./util/getContracts.js');
 
-const CONTRACT_ADDRESS = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512';
+const CONTRACT_ADDRESS = (getContracts()).F473_TOKENS;
 
 /** CONFIG **/
 //const TO_ADDRESS = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'; // address 0 of hardhat default
@@ -23,8 +24,6 @@ async function main() {
   // We get the contract to deploy
   const F473Tokens = await ethers.getContractFactory('F473Tokens');
   const contract = await F473Tokens.attach(CONTRACT_ADDRESS);
-
-  const provider = await ethers.getDefaultProvider();
 
   let tx = await contract.mintHearts(TO_ADDRESS, index, version, amount);
   let receipt = await tx.wait();

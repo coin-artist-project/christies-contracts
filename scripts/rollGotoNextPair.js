@@ -5,9 +5,11 @@
 // Runtime Environment's members available in the global scope.
 const hre = require('hardhat');
 const { ethers } = require('hardhat');
+const getContracts = require('./util/getContracts.js');
 
-const CONTRACT_ADDRESS = '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0';
-const CONTRACT_ADDRESS_TOKENS = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512';
+const CONTRACT_ADDRESS = (getContracts()).F473;
+const CONTRACT_ADDRESS_TOKENS = (getContracts()).F473_TOKENS;
+const CONTRACT_ADDRESS_REPLAY = (getContracts()).F473_REPLAY_TOKENS;
 
 async function main() {
   // Check the address of the sender
@@ -19,8 +21,6 @@ async function main() {
 
   const F473Tokens = await ethers.getContractFactory('F473Tokens');
   const tokenContract = await F473Tokens.attach(CONTRACT_ADDRESS_TOKENS);
-
-  const provider = await ethers.getDefaultProvider();
 
   if ((await contract.getCurrentLevel()).toNumber() == 12) {
     console.log("Game is over");
