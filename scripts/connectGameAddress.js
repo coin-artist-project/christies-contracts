@@ -25,11 +25,13 @@ async function main() {
   const F473ReplayToken = await ethers.getContractFactory('F473ReplayToken');
   const contractReplay = await F473ReplayToken.attach(CONTRACT_ADDRESS_REPLAY);
 
-  let tx = await contractTokens.setGameAddress(CONTRACT_ADDRESS, {gasPrice: 10, gasLimit: 20000000});
+  let gasLimit = (process.env.HARDHAT_NETWORK == undefined) ? 12450000 : 20000000;
+
+  let tx = await contractTokens.setGameAddress(CONTRACT_ADDRESS, {gasPrice: 8000000000, gasLimit});
   let receipt = await tx.wait();
   console.log(receipt);
 
-  tx = await contractReplay.setGameAddress(CONTRACT_ADDRESS, {gasPrice: 10, gasLimit: 20000000});
+  tx = await contractReplay.setGameAddress(CONTRACT_ADDRESS, {gasPrice: 8000000000, gasLimit});
   receipt = await tx.wait();
   console.log(receipt);
 }

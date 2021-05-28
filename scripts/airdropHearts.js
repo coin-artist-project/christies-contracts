@@ -20,7 +20,8 @@ const TO_ADDRESSES = [
   '0x148e2ed011a9eaaa200795f62889d68153eeacde',
   '0x984f145fe2B6dA0328163A159BD1e422BF5EF48a',
   '0x7c7d093b4Fb96C89fcC29cD4c24c15DB0ed669dF',
-  '0x614A61a3b7F2fd8750AcAAD63b2a0CFe8B8524F1'
+  '0x614A61a3b7F2fd8750AcAAD63b2a0CFe8B8524F1',
+  '0xbc3b63e1C55Af9CD16eBB1c09504410e8BA7E3df'
 ];
 /** CONFIG **/
 
@@ -34,12 +35,15 @@ async function main() {
   const F473Tokens = await ethers.getContractFactory('F473Tokens');
   const contract = await F473Tokens.attach(CONTRACT_ADDRESS);
 
+  let gasLimit = (process.env.HARDHAT_NETWORK == undefined) ? 12450000 : 20000000;
+
   for (let addr of TO_ADDRESSES) {
-    let promises = [];
-    for (let index = 1; index <= 7; index++) {
-      promises.push(contract.mintHearts(addr, index, 1, 15))
-    }
-    let res = await Promise.all(promises);
+    await contract.mintHearts(addr, Math.floor(Math.random() * 7 + 1), 1, 15, {gasPrice: 8000000000, gasLimit});
+    //let promises = [];
+    //for (let index = 1; index <= 7; index++) {
+    //  promises.push(contract.mintHearts(addr, index, 1, 2, {gasPrice: 8000000000, gasLimit}));
+    //}
+    //let res = await Promise.all(promises);
     console.log("Issued to", addr);
   }
 

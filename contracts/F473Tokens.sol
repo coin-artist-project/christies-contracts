@@ -33,11 +33,8 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 	uint256 public constant NUM_HEARTS_COLORS = 7;
 	uint256 public constant NUM_HEARTS_MINTED = 1;
 
-	// Winning the game
-	uint256 constant NUM_HEARTS_LEVEL_NINE_COUPLE = 100;
-	uint256 constant NUM_HEARTS_LEVEL_NINE_OTHER = 10;
-	mapping(uint256 => uint256) couplesClaimed;
-	mapping(uint256 => uint256) loveDecayRate;
+	// Allowlist by heart ownership
+	mapping(address => bool) public receivedHeart;
 
 	// Game
 	address gameAddress;
@@ -98,6 +95,7 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 	{
 		require(index >= 1 && index <= NUM_HEARTS_COLORS, "Invalid hearts index");
 		_mint(to, (version << VERSION_BITSHIFT) + HEARTS_ID + index, amount, "");
+		receivedHeart[to] = true;
 	}
 
 	function burn(
@@ -211,6 +209,24 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 		}
 
 		return (tokenIds, character, background, audio, version, amounts, nextCursor);
+	}
+
+	function safeTransferFrom(
+		address from,
+		address to,
+		uint256 id,
+		uint256 amount,
+		bytes memory data
+	)
+		public
+		virtual
+		override
+	{
+		super.safeTransferFrom(from, to, id, amount, data);
+
+		if (isHeart(id)) {
+			receivedHeart[to] = true;
+		}
 	}
 
 	/**

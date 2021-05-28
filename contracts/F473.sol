@@ -284,7 +284,7 @@ contract F473 is ReentrancyGuard, Ownable
 		view
 		returns (bool)
 	{
-		return allowedAddresses[_address];
+		return allowedAddresses[_address] || f473tokensContract.receivedHeart(_address);
 	}
 
 	function toggleAllowlist(

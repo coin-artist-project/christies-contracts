@@ -14,6 +14,8 @@ describe('F473', function () {
   let acct1;
   let acct2;
   let puzzleAcct3;
+  let notAllowlistedAcct4;
+  let notAllowlistedAcct5;
   let accts;
 
   let acct1cards = [], acct2cards = [];
@@ -49,7 +51,7 @@ describe('F473', function () {
   }
 
   before(async () => {
-    [owner, acct1, acct2, puzzleAcct3, ...accts] = await ethers.getSigners();
+    [owner, acct1, acct2, puzzleAcct3, notAllowlistedAcct4, notAllowlistedAcct5, ...accts] = await ethers.getSigners();
 
     const F473ReplayToken = await ethers.getContractFactory('F473ReplayToken');
     f473ReplayTokenContract = await F473ReplayToken.deploy("https://localhost/{uri}.json");
@@ -236,6 +238,74 @@ describe('F473', function () {
     await f473Contract.setInAllowlist(acct2.address, true);
 
     response = await f473Contract.checkAllowedAddress(acct2.address);
+    expect(response).to.equal(true);
+  });
+
+  it('Should allow receiving a heart to permanently be on the allowlist', async function () {
+    // Should NOT be on allowlist originally
+    response = await f473Contract.checkAllowedAddress(notAllowlistedAcct4.address);
+    expect(response).to.equal(false);
+
+    response = await f473Contract.checkAllowedAddress(notAllowlistedAcct5.address);
+    expect(response).to.equal(false);
+
+    await f473TokensContract.connect(owner).mintHearts(notAllowlistedAcct4.address, await f473Contract.heartsRandom(0), 1, 1);
+
+    // Should have one token
+    let tokenCount = await f473TokensContract.getAccountTokensCount(notAllowlistedAcct4.address);
+    expect(tokenCount.toNumber()).to.equal(1);
+
+    // Other should have none
+    tokenCount = await f473TokensContract.getAccountTokensCount(notAllowlistedAcct5.address);
+    expect(tokenCount.toNumber()).to.equal(0);
+
+    // Get the heart token ID
+    let tokens = await f473TokensContract.getAccountTokensPaginated(notAllowlistedAcct4.address, 0, 1);
+    let heartId = tokens.tokenIds[0].toString();
+
+    // Should be on allowlist now
+    response = await f473Contract.checkAllowedAddress(notAllowlistedAcct4.address);
+    expect(response).to.equal(true);
+
+    // Other acct should not be on allowlist
+    response = await f473Contract.checkAllowedAddress(notAllowlistedAcct5.address);
+    expect(response).to.equal(false);
+
+    // Transferring the token out keeps the player on the allowlist
+    await f473TokensContract.connect(notAllowlistedAcct4).safeTransferFrom(notAllowlistedAcct4.address, notAllowlistedAcct5.address, heartId, 1, "0x00");
+
+    // Should not have the heart anymore
+    tokenCount = await f473TokensContract.getAccountTokensCount(notAllowlistedAcct4.address);
+    expect(tokenCount.toNumber()).to.equal(0);
+
+    // Other should have it
+    tokenCount = await f473TokensContract.getAccountTokensCount(notAllowlistedAcct5.address);
+    expect(tokenCount.toNumber()).to.equal(1);
+
+    // Should be on allowlist still
+    response = await f473Contract.checkAllowedAddress(notAllowlistedAcct4.address);
+    expect(response).to.equal(true);
+
+    // Other acct should now be on allowlist
+    response = await f473Contract.checkAllowedAddress(notAllowlistedAcct5.address);
+    expect(response).to.equal(true);
+
+    // Transferring the token out keeps the *other* player on the allowlist as well
+    await f473TokensContract.connect(notAllowlistedAcct5).safeTransferFrom(notAllowlistedAcct5.address, owner.address, heartId, 1, "0x00");
+
+    // Should not have the heart anymore
+    tokenCount = await f473TokensContract.getAccountTokensCount(notAllowlistedAcct4.address);
+    expect(tokenCount.toNumber()).to.equal(0);
+
+    tokenCount = await f473TokensContract.getAccountTokensCount(notAllowlistedAcct5.address);
+    expect(tokenCount.toNumber()).to.equal(0);
+
+    // Should be on allowlist still
+    response = await f473Contract.checkAllowedAddress(notAllowlistedAcct4.address);
+    expect(response).to.equal(true);
+
+    // Other acct should be on allowlist still
+    response = await f473Contract.checkAllowedAddress(notAllowlistedAcct5.address);
     expect(response).to.equal(true);
   });
 

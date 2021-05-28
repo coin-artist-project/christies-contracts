@@ -3,13 +3,13 @@ module.exports = () => {
     return {
       F473 : '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
       F473_TOKENS : '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
-      F473_REPLAY_TOKENS : ''
+      F473_REPLAY_TOKENS : '0x5fbdb2315678afecb367f032d93f642f64180aa3'
     };
   } else if (process.env.HARDHAT_NETWORK === 'mumbai') {
     return {
-      F473 : '0x2aa10123EFfc50af2b9234528cE175F7185b7219',
-      F473_TOKENS : '0x2D438F1da6fa4203f8DE40dF5feC2b317f1f9eAd',
-      F473_REPLAY_TOKENS : ''
+      F473 : '0x9aee9A73eaed3d5D69652B0A807c7863d938e00D',
+      F473_TOKENS : '0x5dD34087bB7Cf948f12f98C69A7b605C9bDeb917',
+      F473_REPLAY_TOKENS : '0x29092966a996f52c7A9C74C6ebf5fB25B284Af39'
     };
   } else if (process.env.HARDHAT_NETWORK === 'matic') {
     return {
