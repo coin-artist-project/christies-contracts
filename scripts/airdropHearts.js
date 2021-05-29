@@ -38,7 +38,9 @@ async function main() {
   let gasLimit = (process.env.HARDHAT_NETWORK == undefined) ? 12450000 : 20000000;
 
   for (let addr of TO_ADDRESSES) {
-    await contract.mintHearts(addr, Math.floor(Math.random() * 7 + 1), 1, 15, {gasPrice: 8000000000, gasLimit});
+    await contract.mintHearts(addr, Math.floor(Math.random() * 7 + 1), 1, 1, {gasPrice: 8000000000, gasLimit});
+    await contract.mintHearts(addr, Math.floor(Math.random() * 7 + 1), 1, 1, {gasPrice: 8000000000, gasLimit});
+    await contract.mintHearts(addr, Math.floor(Math.random() * 7 + 1), 1, 1, {gasPrice: 8000000000, gasLimit});
     //let promises = [];
     //for (let index = 1; index <= 7; index++) {
     //  promises.push(contract.mintHearts(addr, index, 1, 2, {gasPrice: 8000000000, gasLimit}));

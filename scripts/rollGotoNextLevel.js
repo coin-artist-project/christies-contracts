@@ -20,7 +20,7 @@ async function main() {
   let SECONDS_PER_LEVEL = await contract.SECONDS_PER_LEVEL();
   ethers.provider.send("evm_increaseTime", [SECONDS_PER_LEVEL.toNumber()]);
 
-  let tx = await contract.roll({gasLimit: 20000000});
+  let tx = await contract.roll();
   let receipt = await tx.wait();
   console.log(receipt);
 }

@@ -1,0 +1,11 @@
+npx hardhat run scripts/deploy.js --network mumbai;
+
+# update addresses
+
+npx hardhat run scripts/connectGameAddress.js --network mumbai;
+npx hardhat run scripts/startGame.js --network mumbai;
+npx hardhat run scripts/airdropTestnetFunds.js --network mumbai;
+
+npx hardhat run scripts/airdropHearts.js --network mumbai;
+
+npx hardhat run scripts/setAllowlistDev.js --network mumbai;

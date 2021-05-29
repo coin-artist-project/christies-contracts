@@ -62,6 +62,106 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 		_setURI(_uri);
 	}
 
+	function uint2str(
+		uint256 _i
+	)
+		internal
+		pure
+		returns (
+			string memory
+		)
+	{
+		if (_i == 0) {
+			return "0";
+		}
+
+		uint256 j = _i;
+		uint256 length;
+		while (j != 0) {
+			length++;
+			j /= 10;
+		}
+
+		bytes memory bstr = new bytes(length);
+		uint256 k = length;
+		j = _i;
+
+		while (j != 0) {
+			bstr[--k] = bytes1(uint8(48 + j % 10));
+			j /= 10;
+		}
+
+		return string(bstr);
+	}
+
+	function uri(
+		uint256 _tokenId
+	)
+		public
+		view
+		virtual
+		override
+	returns (
+		string memory
+	) {
+		(uint256 _character, uint256 _background, uint256 _audio, uint256 _version) = deconstructCard(_tokenId);
+
+		if (isHeart(_tokenId)) {
+			string memory color;
+			if (_character == 1) { color = "Red"; }
+			else if (_character == 2) { color = "Orange"; }
+			else if (_character == 3) { color = "Yellow"; }
+			else if (_character == 4) { color = "Green"; }
+			else if (_character == 5) { color = "Blue"; }
+			else if (_character == 6) { color = "Purple"; }
+			else if (_character == 7) { color = "Black"; }
+
+			return string(
+				abi.encodePacked(
+					abi.encodePacked(
+						bytes('data:application/json,{"name":"H34R7 #'),
+						uint2str(_character),
+						bytes('","description":"A H34R7 from the Game of F473.","image":"https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu/#/card/'),
+						uint2str(_tokenId)
+					),
+					abi.encodePacked(
+						bytes('","attributes":[{"trait_type": "H34R7 Color", "value": "'),
+						bytes(color),
+						bytes('"},{"trait_type": "Game Version", "value": "#'),
+						uint2str(_version),
+						bytes('"}]}')
+					)
+				)
+			);
+		}
+
+		return string(
+			abi.encodePacked(
+				abi.encodePacked(
+					bytes('data:application/json,{"name":"Character #'),
+					uint2str(_character),
+					bytes('","description":"A Character from the Game of F473.","image":"https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu/#/card/'),
+					uint2str(_tokenId)
+				),
+				abi.encodePacked(
+					bytes('","attributes":[{"trait_type": "Character", "value": "#'),
+					uint2str(_character),
+					bytes('"},{"trait_type": "Background", "value": "#'),
+					uint2str(_background),
+					bytes('"},{"trait_type": "Audio", "value": "#'),
+					uint2str(_audio)
+				),
+				abi.encodePacked(
+					bytes('"},{"trait_type": "Character Type", "value": "'),
+					(_character <= NUM_SOLO_CHAR ? "Solo" : (_character <= NUM_SOLO_CHAR + NUM_PAIR_CHAR) ? "Pair" : "Couple"),
+					bytes('"},{"trait_type": "Game Version", "value": "#'),
+					uint2str(_version),
+					bytes('"}]}')
+				)
+			)
+		);
+	}
+
 	function setGameAddress(
 		address _gameAddress
 	)

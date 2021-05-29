@@ -7,9 +7,9 @@ module.exports = () => {
     };
   } else if (process.env.HARDHAT_NETWORK === 'mumbai') {
     return {
-      F473 : '0x9bA4BA983A9582923Af50418B7947a0A0834415c',
-      F473_TOKENS : '0x932ECD4A1C0F4EcfADDcbe17491e389e434d7a82',
-      F473_REPLAY_TOKENS : '0xF77cb73930b44749E644cBF89eaEC40161903e1f'
+      F473 : '0xF3B01f338d6f86c45560CF1939B48cc0d92fbB87',
+      F473_TOKENS : '0xF5B7993079DE0556F3047F0552f3aA0ef95F4893',
+      F473_REPLAY_TOKENS : '0x0847EDBBDC701Ddcb6028ADb08A065ca4a4b81a8'
     };
   } else if (process.env.HARDHAT_NETWORK === 'matic') {
     return {

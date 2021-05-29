@@ -91,8 +91,17 @@ describe('F473', function () {
   });
 
   it('URI should return as expected', async function () {
-    let response = await f473TokensContract.uri(0);
-    expect(response).to.equal("ipfs://QmQxbK1ScMqudmFai8t6MmJQZXsqkGfZz1GJfvFUjN65KS");
+    let response = await f473TokensContract.uri(parseInt(0x101101, 10));
+    expect(response).to.equal('data:application/json,{"name":"Character #1","description":"A Character from the Game of F473.","image":"https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu/#/card/1052929","attributes":[{"trait_type": "Character", "value": "#1"},{"trait_type": "Background", "value": "#1"},{"trait_type": "Audio", "value": "#1"},{"trait_type": "Character Type", "value": "Solo"},{"trait_type": "Game Version", "value": "#1"}]}');
+
+    response = await f473TokensContract.uri(parseInt(0x203431, 10));
+    expect(response).to.equal('data:application/json,{"name":"Character #49","description":"A Character from the Game of F473.","image":"https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu/#/card/2110513","attributes":[{"trait_type": "Character", "value": "#49"},{"trait_type": "Background", "value": "#4"},{"trait_type": "Audio", "value": "#3"},{"trait_type": "Character Type", "value": "Pair"},{"trait_type": "Game Version", "value": "#2"}]}');
+
+    response = await f473TokensContract.uri(parseInt(0x303449, 10));
+    expect(response).to.equal('data:application/json,{"name":"Character #73","description":"A Character from the Game of F473.","image":"https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu/#/card/3159113","attributes":[{"trait_type": "Character", "value": "#73"},{"trait_type": "Background", "value": "#4"},{"trait_type": "Audio", "value": "#3"},{"trait_type": "Character Type", "value": "Couple"},{"trait_type": "Game Version", "value": "#3"}]}');
+
+    response = await f473TokensContract.uri(parseInt(0x110003, 10));
+    expect(response).to.equal('data:application/json,{"name":"H34R7 #3","description":"A H34R7 from the Game of F473.","image":"https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu/#/card/1114115","attributes":[{"trait_type": "H34R7 Color", "value": "Yellow"},{"trait_type": "Game Version", "value": "#1"}]}');
   });
 
   it('Should start at level 1, phase 1', async function () {
@@ -137,7 +146,7 @@ describe('F473', function () {
     expect(response).to.equal(true);
   });
 
-  it('Should not allow a non-owner to set the URI', async function () {
+  it.skip('Should not allow a non-owner to set the URI', async function () {
     await expectRevert(f473TokensContract.connect(acct1).setBaseUri("testbreak"), 'Ownable: caller is not the owner');
     await expectRevert(f473TokensContract.connect(acct2).setBaseUri("testbreak"), 'Ownable: caller is not the owner');
   });
@@ -165,7 +174,7 @@ describe('F473', function () {
     await expectRevert(f473ReplayTokenContract.connect(acct2).burnAndRestart(), "Game must be over to replay");
   });
 
-  it('Should allow owner to set the URI', async function () {
+  it.skip('Should allow owner to set the URI', async function () {
     let newUri = "https://portal.neondistrict.io/f473.json";
     await f473TokensContract.setBaseUri(newUri);
 

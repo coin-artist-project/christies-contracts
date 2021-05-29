@@ -1,0 +1,53 @@
+{
+  "description": "F473 (FATE) is an NFT experience that highlights cross-chain interoperability. Rather than a static NFT that remains in a wallet on one network, F473 comes alive and accessible across Ethereum and the Polygon layer 2 Network. F473 serves as a foundation to spawn thousands of NFTs on Polygon that create a bespoke NFT collecting game that is unlocked only after the initial sale of F473. The spawned assets allow for temporarily altering aesthetics of the core artwork, as well as altering the overall gameplay.", 
+  "external_url": "https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu/#/",
+  "image": "ipfs://Qmdg3kqTd1tp9g1cU6KgVnwDHg1TdqH8ofeScWiDhg6rLQ",
+  "animation_url": "https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu/#/nft/f473",
+  "name": "F473 (FATE)",
+  "attributes" : [
+    {
+      "trait_type": "Creator, Game Designer & Painter", 
+      "value": "Marguerite DeCourcelle, @coin_artist"
+    },
+    {
+      "trait_type": "Contract & Blockchain Engineer", 
+      "value": "Ben Heidorn, @cybourgeoisie"
+    },
+    {
+      "trait_type": "Game & Site Engineer", 
+      "value": "@ACatThatPrograms"
+    },
+    {
+      "trait_type": "Art Director & Project Manager", 
+      "value": "Kyle Chivers"
+    },
+    {
+      "trait_type": "Digital Artist", 
+      "value": "Diego Rodriguez, @dhtenshi"
+    },
+    {
+      "trait_type": "Technical Artist & VFX", 
+      "value": "Diego Martinez"
+    },
+    {
+      "trait_type": "Puzzle Designer", 
+      "value": "Lee Sparks, @motive"
+    },
+    {
+      "trait_type": "Digital Artist", 
+      "value": "Antonio Roberts, @hellocatfood"
+    },
+    {
+      "trait_type": "Sound Design & Musical Composition", 
+      "value": "@TÉMA"
+    },
+    {
+      "trait_type": "Advisor", 
+      "value": "Simon Fremaux, @dievardump"
+    },
+    {
+      "trait_type": "Advisor", 
+      "value": "Rhea Myers, @rheaplex"
+    }
+  ]
+}
