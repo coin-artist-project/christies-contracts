@@ -44,7 +44,7 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 	 */
 
 	constructor()
-		ERC1155("https://localhost/{uri}.json")
+		ERC1155("ipfs://QmQxbK1ScMqudmFai8t6MmJQZXsqkGfZz1GJfvFUjN65KS")
 		Ownable()
 	{ }
 

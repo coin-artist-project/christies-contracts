@@ -29,7 +29,7 @@ describe('F473', function () {
   let NUM_BACKGROUNDS;
 
   const TIME_SLICE_TIME = 60 * 10;
-  const NUM_HEARTS_LEVEL_NINE_COUPLE = 100;
+  const NUM_HEARTS_LEVEL_NINE_COUPLE = 347;
   const NUM_HEARTS_LEVEL_NINE_OTHER = 10;
 
   const HEARTS_TIME_BUFFER = 100;
@@ -92,7 +92,7 @@ describe('F473', function () {
 
   it('URI should return as expected', async function () {
     let response = await f473TokensContract.uri(0);
-    expect(response).to.equal("https://localhost/{uri}.json");
+    expect(response).to.equal("ipfs://QmQxbK1ScMqudmFai8t6MmJQZXsqkGfZz1GJfvFUjN65KS");
   });
 
   it('Should start at level 1, phase 1', async function () {
@@ -1164,9 +1164,9 @@ describe('F473', function () {
     expect(await f473Contract.GAME_OVER()).to.equal(false);
 
     // End the game
-    tx = await f473Contract.connect(acct1).burnHearts(1);
+    tx = await f473Contract.connect(acct1).burnHearts(NUM_HEARTS_LEVEL_NINE_COUPLE - 99);
     receipt = await tx.wait();
-    expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(Math.max(0, 100));
+    expect((await f473Contract.getLoveMeterFilled()).toNumber()).to.equal(Math.max(0, NUM_HEARTS_LEVEL_NINE_COUPLE));
 
     // Check that decay event was emitted
     eventPresent = false;
@@ -1288,6 +1288,22 @@ describe('F473', function () {
    **/
 
   it('Send various hearts, should light them up appropriately', async function () {
+    // Mint all hearts
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 1, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 2, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 3, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 4, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 5, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 6, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 7, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 1, 2, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 2, 2, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 3, 2, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 4, 2, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 5, 2, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 6, 2, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 7, 2, 40);
+
     // Enumerate
     let tokens = await f473TokensContract.getAccountTokensPaginated(acct1.address, 0, 100);
 

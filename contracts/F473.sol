@@ -33,7 +33,7 @@ contract F473 is ReentrancyGuard, Ownable
 	uint256 public   heartsMinted;
 
 	// Winning the game
-	uint256 NUM_HEARTS_LEVEL_NINE_COUPLE = 100;
+	uint256 NUM_HEARTS_LEVEL_NINE_COUPLE = 347;
 	uint256 NUM_HEARTS_LEVEL_NINE_OTHER = 10;
 	mapping(uint256 => mapping (uint256 => uint256)) couplesClaimed;
 	mapping(uint256 => mapping (uint256 => uint256)) heartsBurned;
@@ -169,7 +169,7 @@ contract F473 is ReentrancyGuard, Ownable
 	}
 
 	modifier onlyAllowedAddress() {
-		require(!REQUIRE_ALLOWLIST || allowedAddresses[_msgSender()] == true, "Address is not permitted");
+		require(!REQUIRE_ALLOWLIST || checkAllowedAddress(_msgSender()), "Address is not permitted");
 		_;
 	}
 
@@ -280,7 +280,7 @@ contract F473 is ReentrancyGuard, Ownable
 	function checkAllowedAddress(
 		address _address
 	)
-		external
+		public
 		view
 		returns (bool)
 	{

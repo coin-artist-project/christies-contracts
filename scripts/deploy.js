@@ -11,7 +11,7 @@ const getContracts = require('./util/getContracts.js');
 let PUZZLE_PRIZE_ADDRESS = '0x0804C8ae5FDd715969E5719b79B2D6038D25aCE5';
 
 const TIME_SLICE_TIME = 60 * 2;
-const NUM_HEARTS_LEVEL_NINE_COUPLE = 100;
+const NUM_HEARTS_LEVEL_NINE_COUPLE = 347;
 const NUM_HEARTS_LEVEL_NINE_OTHER = 10;
 
 
