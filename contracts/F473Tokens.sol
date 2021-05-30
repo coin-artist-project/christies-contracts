@@ -22,7 +22,7 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 	uint256 constant BACKGROUND_BITMASK  = 0x000f00;
 	uint256 constant AUDIO_BITMASK       = 0x00f000;
 	//uint256 constant HEARTS_BITMASK    = 0x0f0000;
-	uint256 public constant VERSION_BITMASK = 0xf00000;
+	uint256 public constant VERSION_BITMASK = 0xffff00000;
 	//uint256 constant CHARACTER_BITSHIFT  = 0;
 	uint256 constant BACKGROUND_BITSHIFT = 8;
 	uint256 constant AUDIO_BITSHIFT      = 12;
@@ -39,14 +39,24 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 	// Game
 	address gameAddress;
 
+	// Metadata
+	string animationBaseUrl = "https://gateway.ipfs.io/ipfs/QmUPXgaLUMt78fZfaRtoCPPcVpKUr2Mcbbeb4xtvXJc45d";
+
+	string public name = 'F473 Cards';
+	string public symbol = 'F473C4RD';
+
 	/**
 	 * Management
 	 */
 
-	constructor()
-		ERC1155("ipfs://QmQxbK1ScMqudmFai8t6MmJQZXsqkGfZz1GJfvFUjN65KS")
+	constructor(
+		string memory _animationBaseUrl
+	)
+		ERC1155("ipfs://QmeYJvvsnx6iPgr2pohjusNVyNhfihDzRrXqn4f5GNreM2")
 		Ownable()
-	{ }
+	{
+		animationBaseUrl = _animationBaseUrl;
+	}
 
 	modifier onlyGameOrOwner() {
 		require(gameAddress == _msgSender() || owner() == _msgSender(), "Game or owner caller only");
@@ -60,6 +70,15 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 		onlyOwner
 	{
 		_setURI(_uri);
+	}
+
+	function setAnimationBaseUri(
+		string calldata _uri
+	)
+		external
+		onlyOwner
+	{
+		animationBaseUrl = _uri;
 	}
 
 	function uint2str(
@@ -119,13 +138,21 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 			return string(
 				abi.encodePacked(
 					abi.encodePacked(
-						bytes('data:application/json,{"name":"H34R7 #'),
+						bytes('{"name":"H34R7 #'),
 						uint2str(_character),
-						bytes('","description":"A H34R7 from the Game of F473.","image":"https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu/#/card/'),
-						uint2str(_tokenId)
+						bytes('","description":"A H34R7 from the Game of F473.","external_url":"'),
+						bytes(animationBaseUrl),
+						bytes('","image":"ipfs://QmNcrWuENnoZbvkfSfJ2tBfMw5kLKo37P5h58CQYLJrVbB/')
 					),
 					abi.encodePacked(
-						bytes('","attributes":[{"trait_type": "H34R7 Color", "value": "'),
+						uint2str(_character),
+						bytes('.png","animation_url":"'),
+						bytes(animationBaseUrl),
+						bytes('/#/nft/card/'),
+						uint2str(_tokenId),
+						bytes('","attributes":[{"trait_type": "H34R7 Color", "value": "')
+					),
+					abi.encodePacked(
 						bytes(color),
 						bytes('"},{"trait_type": "Game Version", "value": "#'),
 						uint2str(_version),
@@ -135,24 +162,39 @@ contract F473Tokens is ERC1155Enumerable, ReentrancyGuard, Ownable
 			);
 		}
 
+		require(_background > 0);
+
 		return string(
 			abi.encodePacked(
 				abi.encodePacked(
-					bytes('data:application/json,{"name":"Character #'),
+					bytes('{"name":"Character #'),
 					uint2str(_character),
-					bytes('","description":"A Character from the Game of F473.","image":"https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu/#/card/'),
-					uint2str(_tokenId)
+					bytes('","description":"A Character from the Game of F473.","external_url":"'),
+					bytes(animationBaseUrl),
+					bytes('","image":"ipfs://QmNcrWuENnoZbvkfSfJ2tBfMw5kLKo37P5h58CQYLJrVbB/')
 				),
 				abi.encodePacked(
+					uint2str(_character),
+					bytes('_'),
+					uint2str(_background),
+					bytes('.jpg","animation_url":"'),
+					bytes(animationBaseUrl)
+				),
+				abi.encodePacked(
+					bytes('/#/nft/card/'),
+					uint2str(_tokenId),
 					bytes('","attributes":[{"trait_type": "Character", "value": "#'),
 					uint2str(_character),
-					bytes('"},{"trait_type": "Background", "value": "#'),
-					uint2str(_background),
-					bytes('"},{"trait_type": "Audio", "value": "#'),
-					uint2str(_audio)
+					bytes('"},{"trait_type": "Background", "value": "')
 				),
 				abi.encodePacked(
-					bytes('"},{"trait_type": "Character Type", "value": "'),
+					(_background < 9) ? bytes('Glass #') : bytes('Gradient #'),
+					uint2str((_background - 1) % 8 + 1),
+					bytes('"},{"trait_type": "Audio", "value": "'),
+					(_audio == 1) ? bytes('Solo') : (_audio == 2) ? bytes('Pair') : bytes('Love'),
+					bytes('"},{"trait_type": "Character Type", "value": "')
+				),
+				abi.encodePacked(
 					(_character <= NUM_SOLO_CHAR ? "Solo" : (_character <= NUM_SOLO_CHAR + NUM_PAIR_CHAR) ? "Pair" : "Couple"),
 					bytes('"},{"trait_type": "Game Version", "value": "#'),
 					uint2str(_version),

@@ -28,12 +28,15 @@ async function main() {
 
   // Deploy F473 Replay contracts
   const F473ReplayToken = await ethers.getContractFactory('F473ReplayToken');
-  const f473ReplayTokenContract = await F473ReplayToken.deploy("http://localhost/{url}.json", {gasPrice: 8000000000, gasLimit});
+  const f473ReplayTokenContract = await F473ReplayToken.deploy("ipfs://QmfMgCGbqraG3sxAifHBWjmT3oFrLiAUsqfy19AaHxVx3m", {gasPrice: 8000000000, gasLimit});
   //console.log(f473ReplayTokenContract);
 
   // Deploy F473 contracts
   const F473Tokens = await ethers.getContractFactory('F473Tokens');
-  const f473TokensContract = await F473Tokens.deploy({gasPrice: 8000000000, gasLimit});
+  const f473TokensContract = await F473Tokens.deploy(
+    "https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu",
+    {gasPrice: 8000000000, gasLimit}
+  );
   //console.log(f473TokensContract);
 
   const F473 = await ethers.getContractFactory('F473');

@@ -10,11 +10,7 @@ const getContracts = require('./util/getContracts.js');
 const CONTRACT_ADDRESS = (getContracts()).F473_TOKENS;
 
 /** CONFIG **/
-//const TO_ADDRESS = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'; // address 0 of hardhat default
-const TO_ADDRESS = '0x64EC7280F1766c39a5EBA09703Ec7265d9F5F7a8';
-const index   = 4;
-const version = 2;
-const amount  = 3;
+const tokenId = "1052929";
 /** CONFIG **/
 
 async function main() {
@@ -25,9 +21,7 @@ async function main() {
   const F473Tokens = await ethers.getContractFactory('F473Tokens');
   const contract = await F473Tokens.attach(CONTRACT_ADDRESS);
 
-  let tx = await contract.mintHearts(TO_ADDRESS, index, version, amount);
-  let receipt = await tx.wait();
-  console.log(receipt);
+  console.log(await contract.uri(tokenId));
 }
 
 main()

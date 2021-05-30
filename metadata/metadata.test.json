@@ -1,6 +1,1 @@
-{
-  "description": "Test Asset", 
-  "external_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-  "image": "ipfs://QmVWY9PbHnZZApzhfTZo3SbzNMmnDTYWKcZAyDD8xtk5BF", 
-  "name": "Testing the Game of F473"
-}
+{"name":"Character #1","description":"A Character from the Game of F473.","animation_url":"https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu/#/card/1052929","attributes":[{"trait_type": "Character", "value": "#1"},{"trait_type": "Background", "value": "#1"},{"trait_type": "Audio", "value": "#1"},{"trait_type": "Character Type", "value": "Solo"},{"trait_type": "Game Version", "value": "#1"}]}

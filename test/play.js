@@ -57,7 +57,9 @@ describe('F473', function () {
     f473ReplayTokenContract = await F473ReplayToken.deploy("https://localhost/{uri}.json");
 
     const F473Tokens = await ethers.getContractFactory('F473Tokens');
-    f473TokensContract = await F473Tokens.deploy();
+    f473TokensContract = await F473Tokens.deploy(
+      "https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu"
+    );
 
     const F473 = await ethers.getContractFactory('F473');
     f473Contract = await F473.deploy(
@@ -90,17 +92,17 @@ describe('F473', function () {
   });
 
   it('URI should return as expected', async function () {
-    let response = await f473TokensContract.uri(parseInt(0x101101, 10));
-    expect(response).to.equal('data:application/json,{"name":"Character #1","description":"A Character from the Game of F473.","image":"https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu/#/card/1052929","attributes":[{"trait_type": "Character", "value": "#1"},{"trait_type": "Background", "value": "#1"},{"trait_type": "Audio", "value": "#1"},{"trait_type": "Character Type", "value": "Solo"},{"trait_type": "Game Version", "value": "#1"}]}');
+    response = await f473TokensContract.uri(parseInt(0x101101, 10));
+    expect(response).to.equal('{"name":"Character #1","description":"A Character from the Game of F473.","external_url":"https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu","image":"ipfs://QmNcrWuENnoZbvkfSfJ2tBfMw5kLKo37P5h58CQYLJrVbB/1_1.jpg","animation_url":"https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu/#/nft/card/1052929","attributes":[{"trait_type": "Character", "value": "#1"},{"trait_type": "Background", "value": "Glass #1"},{"trait_type": "Audio", "value": "Solo"},{"trait_type": "Character Type", "value": "Solo"},{"trait_type": "Game Version", "value": "#1"}]}');
 
-    response = await f473TokensContract.uri(parseInt(0x203431, 10));
-    expect(response).to.equal('data:application/json,{"name":"Character #49","description":"A Character from the Game of F473.","image":"https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu/#/card/2110513","attributes":[{"trait_type": "Character", "value": "#49"},{"trait_type": "Background", "value": "#4"},{"trait_type": "Audio", "value": "#3"},{"trait_type": "Character Type", "value": "Pair"},{"trait_type": "Game Version", "value": "#2"}]}');
+    response = await f473TokensContract.uri(parseInt(0x203831, 10));
+    expect(response).to.equal('{"name":"Character #49","description":"A Character from the Game of F473.","external_url":"https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu","image":"ipfs://QmNcrWuENnoZbvkfSfJ2tBfMw5kLKo37P5h58CQYLJrVbB/49_8.jpg","animation_url":"https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu/#/nft/card/2111537","attributes":[{"trait_type": "Character", "value": "#49"},{"trait_type": "Background", "value": "Glass #8"},{"trait_type": "Audio", "value": "Love"},{"trait_type": "Character Type", "value": "Pair"},{"trait_type": "Game Version", "value": "#2"}]}');
 
-    response = await f473TokensContract.uri(parseInt(0x303449, 10));
-    expect(response).to.equal('data:application/json,{"name":"Character #73","description":"A Character from the Game of F473.","image":"https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu/#/card/3159113","attributes":[{"trait_type": "Character", "value": "#73"},{"trait_type": "Background", "value": "#4"},{"trait_type": "Audio", "value": "#3"},{"trait_type": "Character Type", "value": "Couple"},{"trait_type": "Game Version", "value": "#3"}]}');
+    response = await f473TokensContract.uri(parseInt(0x302a49, 10));
+    expect(response).to.equal('{"name":"Character #73","description":"A Character from the Game of F473.","external_url":"https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu","image":"ipfs://QmNcrWuENnoZbvkfSfJ2tBfMw5kLKo37P5h58CQYLJrVbB/73_10.jpg","animation_url":"https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu/#/nft/card/3156553","attributes":[{"trait_type": "Character", "value": "#73"},{"trait_type": "Background", "value": "Gradient #2"},{"trait_type": "Audio", "value": "Pair"},{"trait_type": "Character Type", "value": "Couple"},{"trait_type": "Game Version", "value": "#3"}]}');
 
     response = await f473TokensContract.uri(parseInt(0x110003, 10));
-    expect(response).to.equal('data:application/json,{"name":"H34R7 #3","description":"A H34R7 from the Game of F473.","image":"https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu/#/card/1114115","attributes":[{"trait_type": "H34R7 Color", "value": "Yellow"},{"trait_type": "Game Version", "value": "#1"}]}');
+    expect(response).to.equal('{"name":"H34R7 #3","description":"A H34R7 from the Game of F473.","external_url":"https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu","image":"ipfs://QmNcrWuENnoZbvkfSfJ2tBfMw5kLKo37P5h58CQYLJrVbB/3.png","animation_url":"https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu/#/nft/card/1114115","attributes":[{"trait_type": "H34R7 Color", "value": "Yellow"},{"trait_type": "Game Version", "value": "#1"}]}');
   });
 
   it('Should start at level 1, phase 1', async function () {
@@ -1227,20 +1229,20 @@ describe('F473', function () {
     await f473TokensContract.connect(owner).mintHearts(acct1.address, 7, 2, 40);
 
     // Set all of the lights to the restart pattern
-    await f473Contract.connect(acct1).burnHeartLightRegion(0, 0x210001);
-    await f473Contract.connect(acct1).burnHeartLightRegion(1, 0x110002);
-    await f473Contract.connect(acct1).burnHeartLightRegion(2, 0x210003);
-    await f473Contract.connect(acct1).burnHeartLightRegion(3, 0x210004);
-    await f473Contract.connect(acct1).burnHeartLightRegion(4, 0x110005);
+    await f473Contract.connect(acct1).burnHeartLightRegion(0, 0x210003);
+    await f473Contract.connect(acct1).burnHeartLightRegion(1, 0x110001);
+    //await f473Contract.connect(acct1).burnHeartLightRegion(2, 0x000000);
+    await f473Contract.connect(acct1).burnHeartLightRegion(3, 0x210005);
+    //await f473Contract.connect(acct1).burnHeartLightRegion(4, 0x000000);
     await f473Contract.connect(acct1).burnHeartLightRegion(5, 0x210006);
     await f473Contract.connect(acct1).burnHeartLightRegion(6, 0x210007);
-    await f473Contract.connect(acct1).burnHeartLightRegion(7, 0x210006);
+    await f473Contract.connect(acct1).burnHeartLightRegion(7, 0x210002);
 
     // Check that game is still over
     expect(await f473Contract.GAME_OVER()).to.equal(true);
 
     // Final color
-    await f473Contract.connect(acct1).burnHeartLightRegion(8, 0x110005);
+    await f473Contract.connect(acct1).burnHeartLightRegion(8, 0x110004);
 
     // Check that game is restarted
     expect(await f473Contract.GAME_OVER()).to.equal(false);
@@ -1248,6 +1250,53 @@ describe('F473', function () {
 
   // Required to verify later that the game is still over after ending is showing
   it('Allow players to beat the game [again x2]', beatTheGame.bind(this, 3));
+
+  it('Should allow regular players to view final ending and then view normal ending again', async function () {
+    // Mint all hearts
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 1, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 2, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 3, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 4, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 5, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 6, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 7, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 1, 2, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 2, 2, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 3, 2, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 4, 2, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 5, 2, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 6, 2, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 7, 2, 40);
+
+    // Set all of the lights to the restart pattern
+    await f473Contract.connect(acct1).burnHeartLightRegion(0, 0x210004);
+    await f473Contract.connect(acct1).burnHeartLightRegion(1, 0x110002);
+    await f473Contract.connect(acct1).burnHeartLightRegion(2, 0x110007);
+    await f473Contract.connect(acct1).burnHeartLightRegion(3, 0x210006);
+    //await f473Contract.connect(acct1).burnHeartLightRegion(4, 0x000000);
+    await f473Contract.connect(acct1).burnHeartLightRegion(5, 0x210005);
+    //await f473Contract.connect(acct1).burnHeartLightRegion(6, 0x000000);
+    await f473Contract.connect(acct1).burnHeartLightRegion(7, 0x210001);
+
+    // Check that game is still over but NOT showing final ending
+    expect(await f473Contract.GAME_OVER()).to.equal(true);
+    expect(await f473Contract.showingFinalEnding()).to.equal(false);
+
+    // Final color
+    await f473Contract.connect(acct1).burnHeartLightRegion(8, 0x110003);
+
+    // Check that game is still over AND showing final ending
+    expect(await f473Contract.GAME_OVER()).to.equal(true);
+    expect(await f473Contract.showingFinalEnding()).to.equal(true);
+
+    // Alter any color
+    await f473Contract.connect(acct1).burnHeartLightRegion(8, 0x210004);
+
+    // Check that game is still over but NOT showing final ending
+    expect(await f473Contract.GAME_OVER()).to.equal(true);
+    expect(await f473Contract.showingFinalEnding()).to.equal(false);
+
+  });
 
   it('Enumerate both accounts tokens', async function () {
     let acct1Tokens = (await f473TokensContract.getAccountTokensCount(acct1.address)).toNumber();

@@ -7,27 +7,27 @@ const hre = require('hardhat');
 const { ethers } = require('hardhat');
 const getContracts = require('./util/getContracts.js');
 
-const CONTRACT_ADDRESS = (getContracts()).F473_TOKENS;
-
-/** CONFIG **/
-//const TO_ADDRESS = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'; // address 0 of hardhat default
-const TO_ADDRESS = '0x64EC7280F1766c39a5EBA09703Ec7265d9F5F7a8';
-const index   = 4;
-const version = 2;
-const amount  = 3;
-/** CONFIG **/
-
 async function main() {
   // Check the address of the sender
   const [deployer] = await ethers.getSigners();
 
-  // We get the contract to deploy
-  const F473Tokens = await ethers.getContractFactory('F473Tokens');
-  const contract = await F473Tokens.attach(CONTRACT_ADDRESS);
+  console.log(
+    "Deploying TEST TOKEN contracts with the account:",
+    deployer.address
+  );
 
-  let tx = await contract.mintHearts(TO_ADDRESS, index, version, amount);
-  let receipt = await tx.wait();
-  console.log(receipt);
+  console.log("Account balance:", (await deployer.getBalance()).toString());
+
+  let gasLimit = (process.env.HARDHAT_NETWORK == undefined) ? 12450000 : 20000000;
+
+  // Deploy F473 contracts
+  const F473TestToken = await ethers.getContractFactory('F473TestToken');
+  const f473TestTokenContract = await F473TestToken.deploy(
+    "https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu/#/nft/f473",
+    {gasPrice: 8000000000, gasLimit}
+  );
+
+  console.log('F473 Test Token deployed to:', f473Contract.address);
 }
 
 main()

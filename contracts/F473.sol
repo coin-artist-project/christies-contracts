@@ -15,6 +15,7 @@ contract F473 is ReentrancyGuard, Ownable
 
 	// Final ending
 	bool SHOW_FINAL_ENDING;
+	bool SHOW_FINAL_ENDING_TEMPORARY;
 	bool IGNORE_FINAL_ENDING_SWITCH;
 
 	// NFTs Config
@@ -162,6 +163,17 @@ contract F473 is ReentrancyGuard, Ownable
 			)
 		);
 
+		// Reset all lights
+		regionHearts[0] = 0;
+		regionHearts[1] = 0;
+		regionHearts[2] = 0;
+		regionHearts[3] = 0;
+		regionHearts[4] = 0;
+		regionHearts[5] = 0;
+		regionHearts[6] = 0;
+		regionHearts[7] = 0;
+		regionHearts[8] = 0;
+
 		// Set last random time slice
 		lastRandomTimeSlice = timeSlice + 2;
 	}
@@ -308,7 +320,7 @@ contract F473 is ReentrancyGuard, Ownable
 		view
 		returns (bool)
 	{
-		return SHOW_FINAL_ENDING;
+		return SHOW_FINAL_ENDING || SHOW_FINAL_ENDING_TEMPORARY;
 	}
 
 	function heartsRandom(
@@ -585,6 +597,9 @@ contract F473 is ReentrancyGuard, Ownable
 
 		// Check if the game restarts
 		checkGameRestarts();
+
+		// Check if the final ending shows
+		checkFinalGameEnding();
 	}
 
 	function checkGameRestarts()
@@ -594,17 +609,56 @@ contract F473 is ReentrancyGuard, Ownable
 		if (GAME_OVER && !showingFinalEnding()) {
 			uint256 TOKENID_BITMASK = ~(f473tokensContract.VERSION_BITMASK());
 			if (
-				(regionHearts[0] & TOKENID_BITMASK) == 0x10001 &&
-				(regionHearts[1] & TOKENID_BITMASK) == 0x10002 &&
-				(regionHearts[2] & TOKENID_BITMASK) == 0x10003 &&
-				(regionHearts[3] & TOKENID_BITMASK) == 0x10004 &&
-				(regionHearts[4] & TOKENID_BITMASK) == 0x10005 &&
+				(regionHearts[0] & TOKENID_BITMASK) == 0x10003 &&
+				(regionHearts[1] & TOKENID_BITMASK) == 0x10001 &&
+				(regionHearts[2] & TOKENID_BITMASK) == 0x00000 &&
+				(regionHearts[3] & TOKENID_BITMASK) == 0x10005 &&
+				(regionHearts[4] & TOKENID_BITMASK) == 0x00000 &&
 				(regionHearts[5] & TOKENID_BITMASK) == 0x10006 &&
 				(regionHearts[6] & TOKENID_BITMASK) == 0x10007 &&
-				(regionHearts[7] & TOKENID_BITMASK) == 0x10006 &&
-				(regionHearts[8] & TOKENID_BITMASK) == 0x10005
+				(regionHearts[7] & TOKENID_BITMASK) == 0x10002 &&
+				(regionHearts[8] & TOKENID_BITMASK) == 0x10004
 			) {
 				_restartGame();
+			}
+		}
+	}
+
+	function checkFinalGameEnding()
+		internal
+	{
+		// If the game is over, but not showing final video, players can restart the game with a desired hearts input
+		if (GAME_OVER && !showingFinalEnding()) {
+			uint256 TOKENID_BITMASK = ~(f473tokensContract.VERSION_BITMASK());
+			if (
+				(regionHearts[0] & TOKENID_BITMASK) == 0x10004 &&
+				(regionHearts[1] & TOKENID_BITMASK) == 0x10002 &&
+				(regionHearts[2] & TOKENID_BITMASK) == 0x10007 &&
+				(regionHearts[3] & TOKENID_BITMASK) == 0x10006 &&
+				(regionHearts[4] & TOKENID_BITMASK) == 0x00000 &&
+				(regionHearts[5] & TOKENID_BITMASK) == 0x10005 &&
+				(regionHearts[6] & TOKENID_BITMASK) == 0x00000 &&
+				(regionHearts[7] & TOKENID_BITMASK) == 0x10001 &&
+				(regionHearts[8] & TOKENID_BITMASK) == 0x10003
+			) {
+				SHOW_FINAL_ENDING_TEMPORARY = true;
+			}
+		} else if (GAME_OVER && SHOW_FINAL_ENDING_TEMPORARY && !SHOW_FINAL_ENDING) {
+			uint256 TOKENID_BITMASK = ~(f473tokensContract.VERSION_BITMASK());
+			if (
+				(regionHearts[0] & TOKENID_BITMASK) == 0x10004 &&
+				(regionHearts[1] & TOKENID_BITMASK) == 0x10002 &&
+				(regionHearts[2] & TOKENID_BITMASK) == 0x10007 &&
+				(regionHearts[3] & TOKENID_BITMASK) == 0x10006 &&
+				(regionHearts[4] & TOKENID_BITMASK) == 0x00000 &&
+				(regionHearts[5] & TOKENID_BITMASK) == 0x10005 &&
+				(regionHearts[6] & TOKENID_BITMASK) == 0x00000 &&
+				(regionHearts[7] & TOKENID_BITMASK) == 0x10001 &&
+				(regionHearts[8] & TOKENID_BITMASK) == 0x10003
+			) {
+				// Do nothing
+			} else {
+				SHOW_FINAL_ENDING_TEMPORARY = false;
 			}
 		}
 	}
@@ -615,7 +669,7 @@ contract F473 is ReentrancyGuard, Ownable
 		onlyReplayToken
 	{
 		// If the prize is empty, bypass this check
-		if (showingFinalEnding()) {
+		if (SHOW_FINAL_ENDING) {
 			IGNORE_FINAL_ENDING_SWITCH = true;
 		}
 
@@ -1118,11 +1172,6 @@ contract F473 is ReentrancyGuard, Ownable
 			positions     = new uint256[](9);
 		}
 	}
-
-	function emitPairCardTraded(address from, uint256 id) public onlyOwner { emit PairCardTraded(from, id);}
-	function emitHeartsBurned(uint256 currentBurned) public onlyOwner { emit HeartsBurned(currentBurned);}
-	function emitRandomNumberUpdated() public onlyOwner { emit RandomNumberUpdated();}
-	function emitGameOver() public onlyOwner { emit GameOver();}
 
 	/**
 	 * @dev do not accept value sent directly to contract

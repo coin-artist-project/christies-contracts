@@ -11,10 +11,10 @@ const CONTRACT_ADDRESS = (getContracts()).F473_TOKENS;
 
 /** CONFIG **/
 //const TO_ADDRESS = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'; // address 0 of hardhat default
-const TO_ADDRESS = '0x64EC7280F1766c39a5EBA09703Ec7265d9F5F7a8';
-const index   = 4;
-const version = 2;
-const amount  = 3;
+const TO_ADDRESS = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'; // address 1 of hardhat default
+const index   = 1;
+const version = 1;
+const amount  = 1;
 /** CONFIG **/
 
 async function main() {

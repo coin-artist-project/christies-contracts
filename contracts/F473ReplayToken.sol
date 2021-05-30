@@ -8,6 +8,10 @@ contract F473ReplayToken is ERC1155, Ownable {
 	// Game
 	F473 public gameContract;
 
+	// Metadata
+	string name = "F473 Replay Token";
+	string symbol = "F473R3PL4Y";
+
 	constructor(
 		string memory _uri
 	)
