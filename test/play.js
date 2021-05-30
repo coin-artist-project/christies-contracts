@@ -13,7 +13,7 @@ describe('F473', function () {
   let owner;
   let acct1;
   let acct2;
-  let puzzleAcct3;
+  let acct3;
   let notAllowlistedAcct4;
   let notAllowlistedAcct5;
   let accts;
@@ -51,7 +51,7 @@ describe('F473', function () {
   }
 
   before(async () => {
-    [owner, acct1, acct2, puzzleAcct3, notAllowlistedAcct4, notAllowlistedAcct5, ...accts] = await ethers.getSigners();
+    [owner, acct1, acct2, acct3, notAllowlistedAcct4, notAllowlistedAcct5, ...accts] = await ethers.getSigners();
 
     const F473ReplayToken = await ethers.getContractFactory('F473ReplayToken');
     f473ReplayTokenContract = await F473ReplayToken.deploy("https://localhost/{uri}.json");
@@ -63,7 +63,6 @@ describe('F473', function () {
     f473Contract = await F473.deploy(
       f473TokensContract.address,
       f473ReplayTokenContract.address,
-      puzzleAcct3.address,
       TIME_SLICE_TIME,
       NUM_HEARTS_LEVEL_NINE_COUPLE,
       NUM_HEARTS_LEVEL_NINE_OTHER
@@ -112,35 +111,27 @@ describe('F473', function () {
     expect(response).to.equal(1);
   });
 
-  it('First game of F473 should still be active even if the puzzle prize is claimed early', async function () {
-    let response = await f473Contract.checkPuzzlePrizeNotEmpty();
-    expect(response).to.equal(true);
-
-    response = await f473Contract.checkGameNotOver();
-    expect(response).to.equal(true);
-
-    let balance = (await puzzleAcct3.getBalance()); // Subtract gas fee, convert to hex
-
-    await puzzleAcct3.sendTransaction({
-        from: puzzleAcct3.address,
-        to: acct2.address,
-        value: balance.sub("168008000000000")._hex
-    });
-
-    response = await f473Contract.checkPuzzlePrizeNotEmpty();
+  it('First game of F473 should still be active even if the final ending is requested to be shown', async function () {
+    let response = await f473Contract.showingFinalEnding();
     expect(response).to.equal(false);
 
     response = await f473Contract.checkGameNotOver();
     expect(response).to.equal(true);
 
-    await acct2.sendTransaction({
-        from: acct2.address,
-        to: puzzleAcct3.address,
-        value: balance._hex
-    });
+    // Show final ending
+    await f473Contract.connect(owner).toggleFinalEnding(true);
 
-    response = await f473Contract.checkPuzzlePrizeNotEmpty();
+    response = await f473Contract.showingFinalEnding();
     expect(response).to.equal(true);
+
+    response = await f473Contract.checkGameNotOver();
+    expect(response).to.equal(true);
+
+    // Hide final ending
+    await f473Contract.connect(owner).toggleFinalEnding(false);
+
+    response = await f473Contract.showingFinalEnding();
+    expect(response).to.equal(false);
 
     response = await f473Contract.checkGameNotOver();
     expect(response).to.equal(true);
@@ -1255,7 +1246,7 @@ describe('F473', function () {
     expect(await f473Contract.GAME_OVER()).to.equal(false);
   });
 
-  // Required to verify later that the game is still over after puzzle is solved
+  // Required to verify later that the game is still over after ending is showing
   it('Allow players to beat the game [again x2]', beatTheGame.bind(this, 3));
 
   it('Enumerate both accounts tokens', async function () {
@@ -1369,23 +1360,20 @@ describe('F473', function () {
 
 
   /**
-   * Puzzle Prize checks & Puzzle Game Over
+   * Final ending checks
    **/
 
-  it('F473 Contract should know that puzzle prize is unclaimed', async function () {
-    let response = await f473Contract.checkPuzzlePrizeNotEmpty();
-    expect(response).to.equal(true);
+  it('F473 Contract should know that final ending isn\'t showing', async function () {
+    let response = await f473Contract.showingFinalEnding();
+    expect(response).to.equal(false);
   });
 
-  it('F473 Contract should see when puzzle prize is claimed', async function () {
-    await puzzleAcct3.sendTransaction({
-        from: puzzleAcct3.address,
-        to: acct2.address,
-        value: (await puzzleAcct3.getBalance()).sub("168008000000000")._hex // Subtract gas fee, convert to hex
-    });
+  it('F473 Contract should see when final ending is showing', async function () {
+    // Show final ending
+    await f473Contract.connect(owner).toggleFinalEnding(true);
 
-    let response = await f473Contract.checkPuzzlePrizeNotEmpty();
-    expect(response).to.equal(false);
+    let response = await f473Contract.showingFinalEnding();
+    expect(response).to.equal(true);
   });
 
   it('Should NOT allow regular players to restart the game using hearts', async function () {
@@ -1425,7 +1413,7 @@ describe('F473', function () {
     expect(await f473Contract.GAME_OVER()).to.equal(true);
   });
 
-  it('Should allow replay token holder to replay game EVEN THOUGH puzzle is solved', async function () {
+  it('Should allow replay token holder to replay game EVEN THOUGH final ending is showing', async function () {
     // Make sure game is over
     expect(await f473Contract.GAME_OVER()).to.equal(true);
 

@@ -13,9 +13,9 @@ contract F473 is ReentrancyGuard, Ownable
 	// Replay Token Address
 	address public F473_REPLAY_ADDRESS;
 
-	// Puzzle Prize Address
-	address public PUZZLE_PRIZE_ADDRESS;
-	bool BYPASS_PUZZLE_PRIZE;
+	// Final ending
+	bool SHOW_FINAL_ENDING;
+	bool IGNORE_FINAL_ENDING_SWITCH;
 
 	// NFTs Config
 	uint256 NUM_SOLO_CHAR;
@@ -77,7 +77,6 @@ contract F473 is ReentrancyGuard, Ownable
 	constructor(
 		address payable _f473TokensAddress,
 		address _f473ReplayTokensAddress,
-		address _puzzlePrizeAddress,
 		uint256 _secondsPerLevel,
 		uint256 _numHeartsLevelNineCouple,
 		uint256 _numHeartsLevelNineOther
@@ -87,7 +86,6 @@ contract F473 is ReentrancyGuard, Ownable
 		// Set the F473 Tokens Contract, addresses, and config
 		f473tokensContract = F473Tokens(_f473TokensAddress);
 		F473_REPLAY_ADDRESS = _f473ReplayTokensAddress;
-		PUZZLE_PRIZE_ADDRESS = _puzzlePrizeAddress;
 		SECONDS_PER_LEVEL = _secondsPerLevel;
 		NUM_HEARTS_LEVEL_NINE_COUPLE = _numHeartsLevelNineCouple;
 		NUM_HEARTS_LEVEL_NINE_OTHER = _numHeartsLevelNineOther;
@@ -103,8 +101,8 @@ contract F473 is ReentrancyGuard, Ownable
 		NUM_FINAL_AUDIO   = f473tokensContract.NUM_FINAL_AUDIO();
 		NUM_HEARTS_COLORS = f473tokensContract.NUM_HEARTS_COLORS();
 
-		// For the very first game, disallow puzzle prize to define the game ending
-		BYPASS_PUZZLE_PRIZE = true;
+		// For the very first game, disallow showing the game ending
+		IGNORE_FINAL_ENDING_SWITCH = true;
 
 		// Set up the region lights
 		regionHearts = new uint256[](9);
@@ -188,7 +186,7 @@ contract F473 is ReentrancyGuard, Ownable
 		view
 		returns (bool)
 	{
-		return (!GAME_OVER && (checkPuzzlePrizeNotEmpty() || BYPASS_PUZZLE_PRIZE));
+		return (!GAME_OVER && (!showingFinalEnding() || IGNORE_FINAL_ENDING_SWITCH));
 	}
 
 	modifier validTimeSlice(uint256 _timeSlice) {
@@ -267,6 +265,15 @@ contract F473 is ReentrancyGuard, Ownable
 		);
 	}
 
+	function toggleFinalEnding(
+		bool _setting
+	)
+		external
+		onlyOwner
+	{
+		SHOW_FINAL_ENDING = _setting;
+	}
+
 	function setInAllowlist(
 		address _address,
 		bool _setting
@@ -296,12 +303,12 @@ contract F473 is ReentrancyGuard, Ownable
 		REQUIRE_ALLOWLIST = _trueOrFalse;
 	}
 
-	function checkPuzzlePrizeNotEmpty()
+	function showingFinalEnding()
 		public
 		view
 		returns (bool)
 	{
-		return PUZZLE_PRIZE_ADDRESS.balance >= 1 ether;
+		return SHOW_FINAL_ENDING;
 	}
 
 	function heartsRandom(
@@ -534,7 +541,7 @@ contract F473 is ReentrancyGuard, Ownable
 		if (getLoveMeterFilled() >= getLoveMeterSize()) {
 			// Couples
 			if (character > NUM_SOLO_CHAR + NUM_PAIR_CHAR) {
-				BYPASS_PUZZLE_PRIZE = false; // Turn this off now
+				IGNORE_FINAL_ENDING_SWITCH = false; // Turn this off now
 				GAME_OVER = true;
 				emit GameOver();
 			// Solos & Pairs
@@ -583,8 +590,8 @@ contract F473 is ReentrancyGuard, Ownable
 	function checkGameRestarts()
 		internal
 	{
-		// If the game is over, but the puzzle prize isn't empty, players can restart the game with a desired hearts input
-		if (GAME_OVER && checkPuzzlePrizeNotEmpty()) {
+		// If the game is over, but not showing final video, players can restart the game with a desired hearts input
+		if (GAME_OVER && !showingFinalEnding()) {
 			uint256 TOKENID_BITMASK = ~(f473tokensContract.VERSION_BITMASK());
 			if (
 				(regionHearts[0] & TOKENID_BITMASK) == 0x10001 &&
@@ -608,8 +615,8 @@ contract F473 is ReentrancyGuard, Ownable
 		onlyReplayToken
 	{
 		// If the prize is empty, bypass this check
-		if (!checkPuzzlePrizeNotEmpty()) {
-			BYPASS_PUZZLE_PRIZE = true;
+		if (showingFinalEnding()) {
+			IGNORE_FINAL_ENDING_SWITCH = true;
 		}
 
 		_restartGame();
@@ -738,7 +745,7 @@ contract F473 is ReentrancyGuard, Ownable
 		returns (uint256)
 	{
 		if (GAME_OVER) {
-			if (!checkPuzzlePrizeNotEmpty()) {
+			if (showingFinalEnding()) {
 				return 13;
 			}
 
@@ -762,7 +769,7 @@ contract F473 is ReentrancyGuard, Ownable
 		returns (uint256)
 	{
 		if (GAME_OVER) {
-			if (!checkPuzzlePrizeNotEmpty()) {
+			if (showingFinalEnding()) {
 				return 5;
 			}
 
