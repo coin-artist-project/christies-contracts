@@ -10,7 +10,7 @@ const getContracts = require('./util/getContracts.js');
 const CONTRACT_ADDRESS = (getContracts()).F473_REPLAY_TOKENS;
 
 /** CONFIG **/
-const TO_ADDRESS = '0x64EC7280F1766c39a5EBA09703Ec7265d9F5F7a8';
+const TO_ADDRESS = '0x254f99Ef16C46397f6345b7352Ee284761f7E059';
 /** CONFIG **/
 
 async function main() {

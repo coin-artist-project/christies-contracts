@@ -23,11 +23,11 @@ async function main() {
   // Deploy F473 contracts
   const F473TestToken = await ethers.getContractFactory('F473TestToken');
   const f473TestTokenContract = await F473TestToken.deploy(
-    "https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu/#/nft/f473",
+    "ipfs://QmVmaV8c9UdjHbn9hKv7iz4QyDVHvLSW1ERRzGRh6JM3qt",
     {gasPrice: 8000000000, gasLimit}
   );
 
-  console.log('F473 Test Token deployed to:', f473Contract.address);
+  console.log('F473 Test Token deployed to:', f473TestTokenContract.address);
 }
 
 main()

@@ -1,5 +1,5 @@
 {
-  "description": "F473 (FATE) is an NFT experience that highlights cross-chain interoperability. Rather than a static NFT that remains in a wallet on one network, F473 comes alive and accessible across Ethereum and the Polygon layer 2 Network. F473 serves as a foundation to spawn thousands of NFTs on Polygon that create a bespoke NFT collecting game that is unlocked only after the initial sale of F473. The spawned assets allow for temporarily altering aesthetics of the core artwork, as well as altering the overall gameplay.", 
+  "description": "\"F473\" (FATE) is an NFT experience that highlights cross-chain interoperability. Rather than a static NFT that remains in a wallet on one network, \"F473\" comes alive and accessible across both the Ethereum and the Polygon blockchain networks. \"F473\" serves as a foundation to spawn thousands of NFTs on Polygon that create a bespoke NFT collecting game that is unlocked only after the initial sale of \"F473\". The spawned assets allow for temporarily altering aesthetics of the core artwork, as well as altering the overall gameplay.\\n\\n\"F473\" utilizes hundreds of both digital and physical artistic assets, and numerous musical compositions. The core of the experience centers around a physical painting, which contains a hand-painted private key giving access to a cryptocurrency prize that will be revealed upon the auction conclusion. As a signature @coin_artist crypto puzzle trail artwork, expect an interactive story woven together with mystery, intrigue, and surprise. The purchaser of the NFT will, of course, also own and determine the fate of the physical painting.\n\nCOIN ARTIST is an Artist, Creative Technologist and Game Designer who has created many firsts within the blockchain creator economy since 2014. She is internationally recognized for cultivating crypto art by BBC, MIT, NASA and Bloomberg. She is credited for inventing cryptopuzzles and is currently the CEO of one of the earliest NFT game companies, Blockade Games, since 2018. Her most renowned artwork is known as Torched H34R7S, a cryptopuzzle from 2015.\n\nThe Coin Artist Team & Contributors\n\nMarguerite deCourcelle aka @coin_artist\nF473: Traditional Artist, Concept, Game Design, Puzzle Design, Story\nBio: Artist, Creative Technologist and Game Designer who has created many firsts within the blockchain creator economy since 2014. She is internationally recognized for cultivating crypto art by BBC, MIT, NASA and Bloomberg. She is credited for inventing cryptopuzzles and is currently the CEO of one of the earliest NFT game companies, Blockade Games, since 2018. Her most renowned artwork is known as Torched H34R7S.\n\nBen Heidorn\nF473: Blockchain Engineer & Lead Developer\nBio: CTO for Blockade Games where he leads development and research. Ben led development for the first free-to-play NFT games on Ethereum sidechains and developed the first Ethereum game to leverage Bitcoin Lightning Network to purchase NFTs. Ben has been writing code for 20 years, with a primary focus on blockchain applications since 2016, and left his CS PhD program in 2018 to co-found Blockade Games.\n\nKyle Chivers\nF473: Art Director & Project Manager\nBio: A British entrepreneur and prior recipient of the prestigious Prince's Trust Natwest Enterprise Award. He is currently working with Blockade Games on their flagship video game title, Neon District.\n\nDiego Rodriguez\nF473: Digital Artist\nBio: One of the earliest known bitcoin artists, Diego has been producing Bitcoin art since 2012. He produced the first covers of Bitcoin Magazine. He is currently Lead Artist for Blockade Games focusing on the genre of cyberpunk. He has produced art for JWP, Evil Hat and Atlas Games.\n\nDiego Martinez\nF473: Technical Artist & VFX\nBio: A Video Game Artist with more than 20 years of experience. He has contributed with his art to a very long list of titles in which we can count Nintendo and PS4 games and world-wide known I.P.'s. He is a 3D Artist, a 2D Artist, a VFX creator, Shader Crafter and StoryTeller. Creator of NoseBound the game and currently working on Neon District at Blockade Games.\n\nLee Sparks aka Motive\nF473: Puzzle Designer\nBio: After years of experience as a lead Game Producer at AAA Game Development Studios, Motive is passionate about bringing his design philosophy to the world of puzzles & crypto. In his spare time he is an amateur DJ & magician.\n\nAntonio Roberts\nF473: Digital Artist\nBio: An artist and curator based in Birmingham, UK, working primarily with video, code and sound. He is critically engaged with the themes surrounding network culture and in his practice explores how technology continues to shape ideas of creation, ownership and authorship.\n\@ACatThatPrograms\nF473: Web Developer\nBio: A full stack developer for Blockade Games and lead front-end developer for Neon District.\n\nTÉMA\nF473: Sound Design & Musical Composition\nBio: A new anon project focused on audio-visual architecture within the emerging NFT economy. TÉMA boasts a decade of scoring music internationally and primarily uses Ableton software for production.\n\nRhea Myers\nF473: Advisor\nBio: An artist, hacker and writer from the UK now based in Canada. She has been coding up crypto art since 2014 and works for a leading blockchain company in Vancouver, BC.\n\nSimon Fremaux\nF473: Advisor\nBio: A web3/solidity developer and founder of BeyondNFT, an interactive NFT platform.\n\nMedium: Digital-born game with generative elements using HTML, CSS, React.JS, Javascript, dedicated web page, and Ethereum and polygon smart contracts. Dimensions variable.\n\n\"F473\" can be played on IPFS: https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu/#/",
   "external_url": "https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu/#/",
   "image": "ipfs://Qmdg3kqTd1tp9g1cU6KgVnwDHg1TdqH8ofeScWiDhg6rLQ",
   "animation_url": "https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu/#/nft/f473",
@@ -7,11 +7,11 @@
   "attributes" : [
     {
       "trait_type": "Creator, Game Designer & Painter", 
-      "value": "Marguerite DeCourcelle, @coin_artist"
+      "value": "@coin_artist, Marguerite DeCourcelle"
     },
     {
       "trait_type": "Contract & Blockchain Engineer", 
-      "value": "Ben Heidorn, @cybourgeoisie"
+      "value": "@cybourgeoisie, Ben Heidorn"
     },
     {
       "trait_type": "Game & Site Engineer", 
@@ -23,7 +23,7 @@
     },
     {
       "trait_type": "Digital Artist", 
-      "value": "Diego Rodriguez, @dhtenshi"
+      "value": "@dhtenshi, Diego Rodriguez"
     },
     {
       "trait_type": "Technical Artist & VFX", 
@@ -31,23 +31,23 @@
     },
     {
       "trait_type": "Puzzle Designer", 
-      "value": "Lee Sparks, @motive"
+      "value": "@motive, Lee Sparks"
     },
     {
       "trait_type": "Digital Artist", 
-      "value": "Antonio Roberts, @hellocatfood"
+      "value": "@hellocatfood, Antonio Roberts"
     },
     {
       "trait_type": "Sound Design & Musical Composition", 
-      "value": "@TÉMA"
+      "value": "@TÉMAnfts"
     },
     {
       "trait_type": "Advisor", 
-      "value": "Simon Fremaux, @dievardump"
+      "value": "@dievardump, Simon Fremaux"
     },
     {
       "trait_type": "Advisor", 
-      "value": "Rhea Myers, @rheaplex"
+      "value": "@rheaplex, Rhea Myers"
     }
   ]
 }

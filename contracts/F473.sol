@@ -34,8 +34,8 @@ contract F473 is ReentrancyGuard, Ownable
 	uint256 public   heartsMinted;
 
 	// Winning the game
-	uint256 NUM_HEARTS_LEVEL_NINE_COUPLE = 347;
-	uint256 NUM_HEARTS_LEVEL_NINE_OTHER = 10;
+	uint256 public NUM_HEARTS_LEVEL_NINE_COUPLE = 347;
+	uint256 public NUM_HEARTS_LEVEL_NINE_OTHER = 10;
 	mapping(uint256 => mapping (uint256 => uint256)) couplesClaimed;
 	mapping(uint256 => mapping (uint256 => uint256)) heartsBurned;
 	mapping(uint256 => mapping (uint256 => uint256)) loveDecayRate;
@@ -275,6 +275,24 @@ contract F473 is ReentrancyGuard, Ownable
 				)
 			)
 		);
+	}
+
+	function setNumHeartsLevelNineCouple(
+		uint256 _setting
+	)
+		external
+		onlyOwner
+	{
+		NUM_HEARTS_LEVEL_NINE_COUPLE = _setting;
+	}
+
+	function setNumHeartsLevelNineOther(
+		uint256 _setting
+	)
+		external
+		onlyOwner
+	{
+		NUM_HEARTS_LEVEL_NINE_OTHER = _setting;
 	}
 
 	function toggleFinalEnding(

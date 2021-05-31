@@ -28,7 +28,10 @@ async function main() {
 
   // Deploy F473 Replay contracts
   const F473ReplayToken = await ethers.getContractFactory('F473ReplayToken');
-  const f473ReplayTokenContract = await F473ReplayToken.deploy("ipfs://QmfMgCGbqraG3sxAifHBWjmT3oFrLiAUsqfy19AaHxVx3m", {gasPrice: 8000000000, gasLimit});
+  const f473ReplayTokenContract = await F473ReplayToken.deploy(
+    "ipfs://QmbNZjWnpkPjeG7my7MEfhnG1mEVRLsAz8KmHGHrx4uRpV",
+    {gasPrice: 8000000000, gasLimit}
+  );
   //console.log(f473ReplayTokenContract);
 
   // Deploy F473 contracts
@@ -50,12 +53,26 @@ async function main() {
   );
   //console.log(f473Contract);
 
-  //await f473TokensContract.setGameAddress(f473Contract.address, {gasLimit});
-  //await f473ReplayTokenContract.setGameAddress(f473Contract.address, {gasLimit});
-
   console.log('F473ReplayToken deployed to:', f473ReplayTokenContract.address);
   console.log('F473Tokens deployed to:', f473TokensContract.address);
   console.log('F473 deployed to:', f473Contract.address);
+
+console.log(`
+      // For getContracts.js
+      F473 : '${f473Contract.address}',
+      F473_TOKENS : '${f473TokensContract.address}',
+      F473_REPLAY_TOKENS : '${f473ReplayTokenContract.address}',
+`);
+
+let env = (process.env.HARDHAT_NETWORK == undefined) ? 'HARDHAT' : (process.env.HARDHAT_NETWORK == 'mumbai') ? 'MUMBAI' : 'MATIC';
+
+console.log(`
+// For .env
+REACT_APP_CONTRACT_ADDRESS_F473_${env}="${f473Contract.address}"
+REACT_APP_CONTRACT_ADDRESS_F473_TOKENS_${env}="${f473TokensContract.address}"
+REACT_APP_CONTRACT_ADDRESS_F473_REPLAY_TOKENS_${env}="${f473ReplayTokenContract.address}"
+`);
+
 }
 
 main()
