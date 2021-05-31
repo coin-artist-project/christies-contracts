@@ -7,27 +7,29 @@ const hre = require('hardhat');
 const { ethers } = require('hardhat');
 const getContracts = require('./util/getContracts.js');
 
+const CONTRACT_ADDRESS = (getContracts()).F473_TOKENS;
+
+/** CONFIG **/
+const TO_ADDRESS0 = '0x97cc50FBA17F8683b5c05DccE0B36b37311e6bb3';
+const version    = 1;
+/** CONFIG **/
+
 async function main() {
   // Check the address of the sender
   const [deployer] = await ethers.getSigners();
 
-  console.log(
-    "Deploying TEST TOKEN contracts with the account:",
-    deployer.address
-  );
-
-  console.log("Account balance:", (await deployer.getBalance()).toString());
+  // We get the contract to deploy
+  const F473Tokens = await ethers.getContractFactory('F473Tokens');
+  const contract = await F473Tokens.attach(CONTRACT_ADDRESS);
 
   let gasLimit = (process.env.HARDHAT_NETWORK == undefined) ? 12450000 : 20000000;
 
-  // Deploy F473 contracts
-  const F473TestToken = await ethers.getContractFactory('F473TestToken');
-  const f473TestTokenContract = await F473TestToken.deploy(
-    "ipfs://QmVu6hZCVSHTZUvvRKbeVczZU42USXgjhRWZVHsbKEtj7g",
-    {gasPrice: 8000000000, gasLimit}
-  );
+  for (let charIdx = 1; charIdx <= 78; charIdx++) {
+    await contract.mintCard(TO_ADDRESS0, charIdx, Math.floor(Math.random() * 15) + 1, 3, version, {gasLimit});
+    console.log("Minted", charIdx);
+  }
 
-  console.log('F473 Test Token deployed to:', f473TestTokenContract.address);
+  console.log("Done");
 }
 
 main()

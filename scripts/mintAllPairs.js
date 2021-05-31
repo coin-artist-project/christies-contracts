@@ -11,7 +11,6 @@ const CONTRACT_ADDRESS = (getContracts()).F473_TOKENS;
 
 /** CONFIG **/
 const TO_ADDRESS0 = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'; // address 0 of hardhat default
-const TO_ADDRESS1 = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'; // address 1 of hardhat default
 const background = 1;
 const audio      = 2;
 const version    = 1;
@@ -29,8 +28,7 @@ async function main() {
   const NUM_PAIR = (await contract.NUM_PAIR_CHAR()).toNumber();
 
   for (let charIdx = NUM_SOLO + 1; charIdx <= NUM_PAIR + NUM_SOLO; charIdx++) {
-    await contract.mintCard(TO_ADDRESS0, charIdx, background, audio, version);
-    await contract.mintCard(TO_ADDRESS1, charIdx, background, audio, version);
+    await contract.mintCard(TO_ADDRESS0, charIdx, Math.floor(Math.random() * 16) + 1, Math.floor(Math.random() * 3) + 1, version);
   }
 
   console.log("Done");

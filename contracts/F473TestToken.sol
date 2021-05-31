@@ -6,8 +6,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract F473TestToken is ERC1155, Ownable {
 
 	// Metadata
-	string name = "F473";
-	string symbol = "F473";
+	string public name = "F473";
+	string public symbol = "F473";
 
 	constructor(
 		string memory _uri

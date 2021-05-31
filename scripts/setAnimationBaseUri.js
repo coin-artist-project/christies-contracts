@@ -17,7 +17,7 @@ async function main() {
   const F473Tokens = await ethers.getContractFactory('F473Tokens');
   const contract = await F473Tokens.attach(CONTRACT_ADDRESS);
 
-  let tx = await contract.setAnimationBaseUri("https://gateway.ipfs.io/ipfs/QmQGot6D6sqAPtXGAuqcSk1PRMRaWJPZrsGUiP3WRL3e2e");
+  let tx = await contract.setAnimationBaseUri("https://ipfs.coinartist.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu");
   let receipt = await tx.wait();
   console.log(receipt);
 }

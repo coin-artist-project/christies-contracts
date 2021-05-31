@@ -7,10 +7,10 @@ const hre = require('hardhat');
 const { ethers } = require('hardhat');
 const getContracts = require('./util/getContracts.js');
 
-const CONTRACT_ADDRESS = '0xbE49f00b7DF593D3D148DaeF3F93F5F1B65EC902';
+const CONTRACT_ADDRESS = '0xa0a774f9f34D5CB5179D80660E07Ccba53C3DC83';
 
 /** CONFIG **/
-const TO_ADDRESS = '0x254f99Ef16C46397f6345b7352Ee284761f7E059';
+const TO_ADDRESS = '0x97cc50FBA17F8683b5c05DccE0B36b37311e6bb3';
 /** CONFIG **/
 
 async function main() {

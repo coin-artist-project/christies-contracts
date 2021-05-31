@@ -29,7 +29,7 @@ async function main() {
   // Deploy F473 Replay contracts
   const F473ReplayToken = await ethers.getContractFactory('F473ReplayToken');
   const f473ReplayTokenContract = await F473ReplayToken.deploy(
-    "ipfs://QmbNZjWnpkPjeG7my7MEfhnG1mEVRLsAz8KmHGHrx4uRpV",
+    "ipfs://QmSmkDELGUVut8uuQdV243hQju48CZaPLtQEoRreXAz7RM",
     {gasPrice: 8000000000, gasLimit}
   );
   //console.log(f473ReplayTokenContract);
@@ -37,7 +37,7 @@ async function main() {
   // Deploy F473 contracts
   const F473Tokens = await ethers.getContractFactory('F473Tokens');
   const f473TokensContract = await F473Tokens.deploy(
-    "https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu",
+    "https://ipfs.coinartist.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu",
     {gasPrice: 8000000000, gasLimit}
   );
   //console.log(f473TokensContract);

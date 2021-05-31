@@ -11,7 +11,7 @@ const CONTRACT_ADDRESS = (getContracts()).F473_TOKENS;
 
 /** CONFIG **/
 //const TO_ADDRESS = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'; // address 0 of hardhat default
-const TO_ADDRESS = '0x254f99Ef16C46397f6345b7352Ee284761f7E059';
+const TO_ADDRESS = '0x97cc50FBA17F8683b5c05DccE0B36b37311e6bb3';
 const character  = 75;
 const background = 7;
 const audio      = 3;

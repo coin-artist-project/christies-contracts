@@ -1,0 +1,5 @@
+Lessons
+- Need to double escape newlines AND double quotes in on-chain metadata - \\n becomes \n when calling uri, then gets rendered as newline by OpenSea, and double quotes need to go into OpenSea escaped
+- IPNS links (even HTTP versions) for image or animation_url do not appear on OpenSea, likely due to how long they take to resolve (timeouts)
+- React.JS does not render on OpenSea's iframes (or possibly any iframes) due to baked-in call to window.localStorage. Need to modify build scripts.
+- ALWAYS PUBLISH again on IPNS after an update
