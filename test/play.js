@@ -58,7 +58,8 @@ describe('F473', function () {
 
     const F473Tokens = await ethers.getContractFactory('F473Tokens');
     f473TokensContract = await F473Tokens.deploy(
-      "https://gateway.ipfs.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu"
+      "https://ipfs.coinartist.io/ipns/k51qzi5uqu5djyk5kj4d5dvad8ev3g2zfyu0ktrusqpwg3qdewd68772mdthhu",
+      "ipfs://Qma9mkSrYwSTgnYKprYdhKowdM8wBzd5H5NNyatnjGBDKP/"
     );
 
     const F473 = await ethers.getContractFactory('F473');
@@ -95,7 +96,7 @@ describe('F473', function () {
     response = await f473TokensContract.uri(parseInt(0x101101, 10));
     expect(response).to.include('Character #1');
     expect(response).to.include('A Character from the Game of F473');
-    expect(response).to.include('ipfs://QmNcrWuENnoZbvkfSfJ2tBfMw5kLKo37P5h58CQYLJrVbB/1_1.jpg');
+    expect(response).to.include('ipfs://Qma9mkSrYwSTgnYKprYdhKowdM8wBzd5H5NNyatnjGBDKP/1_1.jpg');
     expect(response).to.include('"trait_type": "Character", "value": "#1"');
     expect(response).to.include('"trait_type": "Background", "value": "Glass #1"');
     expect(response).to.include('"trait_type": "Audio", "value": "Solo"');
@@ -104,7 +105,7 @@ describe('F473', function () {
     response = await f473TokensContract.uri(parseInt(0x203831, 10));
     expect(response).to.include('Character #49');
     expect(response).to.include('A Character from the Game of F473');
-    expect(response).to.include('ipfs://QmNcrWuENnoZbvkfSfJ2tBfMw5kLKo37P5h58CQYLJrVbB/49_8.jpg');
+    expect(response).to.include('ipfs://Qma9mkSrYwSTgnYKprYdhKowdM8wBzd5H5NNyatnjGBDKP/49_8.jpg');
     expect(response).to.include('"trait_type": "Character", "value": "#49"');
     expect(response).to.include('"trait_type": "Background", "value": "Glass #8"');
     expect(response).to.include('"trait_type": "Audio", "value": "Love"');
@@ -113,7 +114,7 @@ describe('F473', function () {
     response = await f473TokensContract.uri(parseInt(0x302a49, 10));
     expect(response).to.include('Character #73');
     expect(response).to.include('A Character from the Game of F473');
-    expect(response).to.include('ipfs://QmNcrWuENnoZbvkfSfJ2tBfMw5kLKo37P5h58CQYLJrVbB/73_10.jpg');
+    expect(response).to.include('ipfs://Qma9mkSrYwSTgnYKprYdhKowdM8wBzd5H5NNyatnjGBDKP/73_10.jpg');
     expect(response).to.include('"trait_type": "Character", "value": "#73"');
     expect(response).to.include('"trait_type": "Background", "value": "Gradient #2"');
     expect(response).to.include('"trait_type": "Audio", "value": "Pair"');
@@ -121,7 +122,7 @@ describe('F473', function () {
 
     response = await f473TokensContract.uri(parseInt(0x110003, 10));
     expect(response).to.include('A H34R7 from the Game of F473');
-    expect(response).to.include('ipfs://QmNcrWuENnoZbvkfSfJ2tBfMw5kLKo37P5h58CQYLJrVbB/3.png');
+    expect(response).to.include('ipfs://Qma9mkSrYwSTgnYKprYdhKowdM8wBzd5H5NNyatnjGBDKP/3.png');
     expect(response).to.include('{"trait_type": "H34R7 Color", "value": "Yellow"}');
     expect(response).to.include('{"trait_type": "Game Version", "value": "#1"}');
   });
@@ -160,9 +161,11 @@ describe('F473', function () {
     expect(response).to.equal(true);
   });
 
-  it('Should not allow a non-owner to set the Metadata onlyOwner functions: setAnimationBaseUri, setDescription', async function () {
+  it('Should not allow a non-owner to set the Metadata onlyOwner functions: setAnimationBaseUri, setPreviewImageBaseUri, setDescription', async function () {
     await expectRevert(f473TokensContract.connect(acct1).setAnimationBaseUri("testbreak"), 'Ownable: caller is not the owner');
     await expectRevert(f473TokensContract.connect(acct2).setAnimationBaseUri("testbreak"), 'Ownable: caller is not the owner');
+    await expectRevert(f473TokensContract.connect(acct1).setPreviewImageBaseUri("testbreak"), 'Ownable: caller is not the owner');
+    await expectRevert(f473TokensContract.connect(acct2).setPreviewImageBaseUri("testbreak"), 'Ownable: caller is not the owner');
     await expectRevert(f473TokensContract.connect(acct1).setDescription("testbreak"), 'Ownable: caller is not the owner');
     await expectRevert(f473TokensContract.connect(acct2).setDescription("testbreak"), 'Ownable: caller is not the owner');
   });
@@ -202,15 +205,20 @@ describe('F473', function () {
     await expectRevert(f473ReplayTokenContract.connect(acct2).burnAndRestart(), "Game must be over to replay");
   });
 
-  it('Should allow owner to set the Metadata onlyOwner functions: setAnimationBaseUri, setDescription', async function () {
+  it('Should allow owner to set the Metadata onlyOwner functions: setAnimationBaseUri, setPreviewImageBaseUri, setDescription', async function () {
     let orig_animationBaseUrl = await f473TokensContract.animationBaseUrl();
+    let orig_previewImageBaseUrl = await f473TokensContract.previewImageBaseUrl();
     let orig_DESCRIPTION = await f473TokensContract.DESCRIPTION();
 
     let newUri = "https://portal.neondistrict.io/f473.json";
     await f473TokensContract.setAnimationBaseUri(newUri);
+    await f473TokensContract.setPreviewImageBaseUri(newUri);
     await f473TokensContract.setDescription(newUri);
 
     let response = await f473TokensContract.animationBaseUrl();
+    expect(response).to.equal(newUri);
+
+    response = await f473TokensContract.previewImageBaseUrl();
     expect(response).to.equal(newUri);
 
     response = await f473TokensContract.DESCRIPTION();
@@ -218,6 +226,7 @@ describe('F473', function () {
 
     // Put back the way it was
     await f473TokensContract.setAnimationBaseUri(orig_animationBaseUrl);
+    await f473TokensContract.setPreviewImageBaseUri(orig_previewImageBaseUrl);
     await f473TokensContract.setDescription(orig_DESCRIPTION);
   });
 
