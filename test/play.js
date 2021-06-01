@@ -1306,20 +1306,20 @@ describe('F473', function () {
     await f473TokensContract.connect(owner).mintHearts(acct1.address, 7, 2, 40);
 
     // Set all of the lights to the restart pattern
-    await f473Contract.connect(acct1).burnHeartLightRegion(0, 0x210003);
-    await f473Contract.connect(acct1).burnHeartLightRegion(1, 0x110001);
-    //await f473Contract.connect(acct1).burnHeartLightRegion(2, 0x000000);
-    await f473Contract.connect(acct1).burnHeartLightRegion(3, 0x210005);
-    //await f473Contract.connect(acct1).burnHeartLightRegion(4, 0x000000);
-    await f473Contract.connect(acct1).burnHeartLightRegion(5, 0x210006);
-    await f473Contract.connect(acct1).burnHeartLightRegion(6, 0x210007);
-    await f473Contract.connect(acct1).burnHeartLightRegion(7, 0x210002);
+    await f473Contract.connect(acct1).burnHeartLightRegion(0, 0x210003, false);
+    await f473Contract.connect(acct1).burnHeartLightRegion(1, 0x110001, false);
+    //await f473Contract.connect(acct1).burnHeartLightRegion(2, 0x000000, false);
+    await f473Contract.connect(acct1).burnHeartLightRegion(3, 0x210005, false);
+    //await f473Contract.connect(acct1).burnHeartLightRegion(4, 0x000000, false);
+    await f473Contract.connect(acct1).burnHeartLightRegion(5, 0x210006, false);
+    await f473Contract.connect(acct1).burnHeartLightRegion(6, 0x210007, false);
+    await f473Contract.connect(acct1).burnHeartLightRegion(7, 0x210002, false);
 
     // Check that game is still over
     expect(await f473Contract.GAME_OVER()).to.equal(true);
 
     // Final color
-    await f473Contract.connect(acct1).burnHeartLightRegion(8, 0x110004);
+    await f473Contract.connect(acct1).burnHeartLightRegion(8, 0x110004, false);
 
     // Check that game is restarted
     expect(await f473Contract.GAME_OVER()).to.equal(false);
@@ -1346,28 +1346,28 @@ describe('F473', function () {
     await f473TokensContract.connect(owner).mintHearts(acct1.address, 7, 2, 40);
 
     // Set all of the lights to the restart pattern
-    await f473Contract.connect(acct1).burnHeartLightRegion(0, 0x210004);
-    await f473Contract.connect(acct1).burnHeartLightRegion(1, 0x110002);
-    await f473Contract.connect(acct1).burnHeartLightRegion(2, 0x110007);
-    await f473Contract.connect(acct1).burnHeartLightRegion(3, 0x210006);
-    //await f473Contract.connect(acct1).burnHeartLightRegion(4, 0x000000);
-    await f473Contract.connect(acct1).burnHeartLightRegion(5, 0x210005);
-    //await f473Contract.connect(acct1).burnHeartLightRegion(6, 0x000000);
-    await f473Contract.connect(acct1).burnHeartLightRegion(7, 0x210001);
+    await f473Contract.connect(acct1).burnHeartLightRegion(0, 0x210004, false);
+    await f473Contract.connect(acct1).burnHeartLightRegion(1, 0x110002, false);
+    await f473Contract.connect(acct1).burnHeartLightRegion(2, 0x110007, false);
+    await f473Contract.connect(acct1).burnHeartLightRegion(3, 0x210006, false);
+    //await f473Contract.connect(acct1).burnHeartLightRegion(4, 0x000000, false);
+    await f473Contract.connect(acct1).burnHeartLightRegion(5, 0x210005, false);
+    //await f473Contract.connect(acct1).burnHeartLightRegion(6, 0x000000, false);
+    await f473Contract.connect(acct1).burnHeartLightRegion(7, 0x210001, false);
 
     // Check that game is still over but NOT showing final ending
     expect(await f473Contract.GAME_OVER()).to.equal(true);
     expect(await f473Contract.showingFinalEnding()).to.equal(false);
 
     // Final color
-    await f473Contract.connect(acct1).burnHeartLightRegion(8, 0x110003);
+    await f473Contract.connect(acct1).burnHeartLightRegion(8, 0x110003, false);
 
     // Check that game is still over AND showing final ending
     expect(await f473Contract.GAME_OVER()).to.equal(true);
     expect(await f473Contract.showingFinalEnding()).to.equal(true);
 
     // Alter any color
-    await f473Contract.connect(acct1).burnHeartLightRegion(8, 0x210004);
+    await f473Contract.connect(acct1).burnHeartLightRegion(8, 0x210004, false);
 
     // Check that game is still over but NOT showing final ending
     expect(await f473Contract.GAME_OVER()).to.equal(true);
@@ -1443,7 +1443,7 @@ describe('F473', function () {
     tokenIds.reverse();
     for (let token of tokenIds) {
       if ((token.toNumber() & parseInt(0x10000, 10)) > 0) {
-        await f473Contract.connect(acct1).burnHeartLightRegion(lastLitRegion, token);
+        await f473Contract.connect(acct1).burnHeartLightRegion(lastLitRegion, token, false);
         hearts[lastLitRegion++] = token;
       }
 
@@ -1460,6 +1460,53 @@ describe('F473', function () {
 
   });
 
+  it('Send various hearts, should unlight the areas appropriately', async function () {
+    // Mint all hearts
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 1, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 2, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 3, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 4, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 5, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 6, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 7, 1, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 1, 2, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 2, 2, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 3, 2, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 4, 2, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 5, 2, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 6, 2, 40);
+    await f473TokensContract.connect(owner).mintHearts(acct1.address, 7, 2, 40);
+
+    // Enumerate
+    let tokens = await f473TokensContract.getAccountTokensPaginated(acct1.address, 0, 100);
+
+    let lastLitRegion = 0, hearts = [
+      ethers.BigNumber.from(0), ethers.BigNumber.from(0), ethers.BigNumber.from(0),
+      ethers.BigNumber.from(0), ethers.BigNumber.from(0), ethers.BigNumber.from(0),
+      ethers.BigNumber.from(0), ethers.BigNumber.from(0), ethers.BigNumber.from(0)
+    ];
+
+    let tokenIds = [...tokens.tokenIds];
+    tokenIds.reverse();
+    for (let token of tokenIds) {
+      if ((token.toNumber() & parseInt(0x10000, 10)) > 0) {
+        await f473Contract.connect(acct1).burnHeartLightRegion(lastLitRegion, token, true);
+        hearts[lastLitRegion++] = 0;
+      }
+
+      if (lastLitRegion > 8) {
+        break;
+      }
+    }
+
+    let lights = (await f473Contract.getLights());
+
+    for (let idx in lights) {
+      expect(lights[idx].toNumber()).to.equal(hearts[idx]);
+    }
+
+  });
+
   it('Should not allow a non-heart token to change the color of the lights', async function () {
     // Enumerate
     let tokens = await f473TokensContract.getAccountTokensPaginated(acct1.address, 0, 100);
@@ -1467,7 +1514,7 @@ describe('F473', function () {
     let lastLitRegion = 0, hearts = [];
     for (let token of tokens.tokenIds) {
       if ((token.toNumber() & parseInt(0x10000, 10)) === 0) {
-        await expectRevert(f473Contract.connect(acct1).burnHeartLightRegion(0, token), 'Only hearts');
+        await expectRevert(f473Contract.connect(acct1).burnHeartLightRegion(0, token, false), 'Only hearts');
       }
     }
   });
@@ -1520,20 +1567,20 @@ describe('F473', function () {
     await f473TokensContract.connect(owner).mintHearts(acct1.address, 7, 2, 20);
 
     // Set all of the lights to the restart pattern
-    await f473Contract.connect(acct1).burnHeartLightRegion(0, 0x210001);
-    await f473Contract.connect(acct1).burnHeartLightRegion(1, 0x110002);
-    await f473Contract.connect(acct1).burnHeartLightRegion(2, 0x210003);
-    await f473Contract.connect(acct1).burnHeartLightRegion(3, 0x210004);
-    await f473Contract.connect(acct1).burnHeartLightRegion(4, 0x110005);
-    await f473Contract.connect(acct1).burnHeartLightRegion(5, 0x210006);
-    await f473Contract.connect(acct1).burnHeartLightRegion(6, 0x210007);
-    await f473Contract.connect(acct1).burnHeartLightRegion(7, 0x210006);
+    await f473Contract.connect(acct1).burnHeartLightRegion(0, 0x210001, false);
+    await f473Contract.connect(acct1).burnHeartLightRegion(1, 0x110002, false);
+    await f473Contract.connect(acct1).burnHeartLightRegion(2, 0x210003, false);
+    await f473Contract.connect(acct1).burnHeartLightRegion(3, 0x210004, false);
+    await f473Contract.connect(acct1).burnHeartLightRegion(4, 0x110005, false);
+    await f473Contract.connect(acct1).burnHeartLightRegion(5, 0x210006, false);
+    await f473Contract.connect(acct1).burnHeartLightRegion(6, 0x210007, false);
+    await f473Contract.connect(acct1).burnHeartLightRegion(7, 0x210006, false);
 
     // Check that game is still over
     expect(await f473Contract.GAME_OVER()).to.equal(true);
 
     // Final color
-    await f473Contract.connect(acct1).burnHeartLightRegion(8, 0x110005);
+    await f473Contract.connect(acct1).burnHeartLightRegion(8, 0x110005, false);
 
     // Check that game is restarted
     expect(await f473Contract.GAME_OVER()).to.equal(true);
@@ -1574,20 +1621,20 @@ describe('F473', function () {
     await f473TokensContract.connect(owner).mintHearts(acct1.address, 7, 2, 2);
 
     // Set all of the lights to the restart pattern
-    await f473Contract.connect(acct1).burnHeartLightRegion(0, 0x210001);
-    await f473Contract.connect(acct1).burnHeartLightRegion(1, 0x110002);
-    await f473Contract.connect(acct1).burnHeartLightRegion(2, 0x210003);
-    await f473Contract.connect(acct1).burnHeartLightRegion(3, 0x210004);
-    await f473Contract.connect(acct1).burnHeartLightRegion(4, 0x110005);
-    await f473Contract.connect(acct1).burnHeartLightRegion(5, 0x210006);
-    await f473Contract.connect(acct1).burnHeartLightRegion(6, 0x210007);
-    await f473Contract.connect(acct1).burnHeartLightRegion(7, 0x210006);
+    await f473Contract.connect(acct1).burnHeartLightRegion(0, 0x210001, false);
+    await f473Contract.connect(acct1).burnHeartLightRegion(1, 0x110002, false);
+    await f473Contract.connect(acct1).burnHeartLightRegion(2, 0x210003, false);
+    await f473Contract.connect(acct1).burnHeartLightRegion(3, 0x210004, false);
+    await f473Contract.connect(acct1).burnHeartLightRegion(4, 0x110005, false);
+    await f473Contract.connect(acct1).burnHeartLightRegion(5, 0x210006, false);
+    await f473Contract.connect(acct1).burnHeartLightRegion(6, 0x210007, false);
+    await f473Contract.connect(acct1).burnHeartLightRegion(7, 0x210006, false);
 
     // Check that game is still over
     expect(await f473Contract.GAME_OVER()).to.equal(true);
 
     // Final color
-    await f473Contract.connect(acct1).burnHeartLightRegion(8, 0x110005);
+    await f473Contract.connect(acct1).burnHeartLightRegion(8, 0x110005, false);
 
     // Check that game is restarted
     expect(await f473Contract.GAME_OVER()).to.equal(true);

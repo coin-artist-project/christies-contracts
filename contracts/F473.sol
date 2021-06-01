@@ -341,6 +341,14 @@ contract F473 is ReentrancyGuard, Ownable
 		return SHOW_FINAL_ENDING || SHOW_FINAL_ENDING_TEMPORARY;
 	}
 
+	function showingFinalEndingOnlyTemporary()
+		public
+		view
+		returns (bool)
+	{
+		return !SHOW_FINAL_ENDING && SHOW_FINAL_ENDING_TEMPORARY;
+	}
+
 	function heartsRandom(
 		uint256 _idxOffset
 	)
@@ -599,7 +607,8 @@ contract F473 is ReentrancyGuard, Ownable
 
 	function burnHeartLightRegion(
 		uint256 _region,
-		uint256 _tokenId
+		uint256 _tokenId,
+		bool _unlightInstead
 	)
 		public
 		gameStarted
@@ -609,7 +618,12 @@ contract F473 is ReentrancyGuard, Ownable
 		require(_region >= 0 && _region <= 8, "Invalid region");
 		require((f473tokensContract.HEARTS_ID() & _tokenId) > 0, "Only hearts");
 		f473tokensContract.burn(_msgSender(), _tokenId, 1);
-		regionHearts[_region] = _tokenId;
+
+		if (_unlightInstead) {
+			regionHearts[_region] = 0;
+		} else {
+			regionHearts[_region] = _tokenId;
+		}
 
 		emit BurnHeartLightRegion();
 
